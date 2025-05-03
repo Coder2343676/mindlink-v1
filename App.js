@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import ChatScreen from './ChatScreen'; // Import the ChatScreen component
+import SummaryScreen from './SummaryScreen'; // Import the SummaryScreen component
 
 const Stack = createStackNavigator();
 
@@ -24,6 +25,7 @@ export default function App() {
       <Stack.Navigator initialRouteName="Home">
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
+        <Stack.Screen name="Summary" component={SummaryScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

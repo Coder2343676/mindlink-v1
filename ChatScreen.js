@@ -14,18 +14,51 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SYSTEM_INSTRUCTION from './systemInstruction';
+import { Button, Header } from 'react-native-elements'; // Import Header component
 
-
-
-const ChatScreen = () => {
+const ChatScreen = ({navigation}) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [inputHeight, setInputHeight] = useState(40); // New state for input height
   const flatListRef = useRef(null);
 
+  // Set up the header with a button
+  useEffect(() => {
+    navigation.setOptions({
+        headerRight: () => (
+            <Button
+              title="End Chat"
+              onPress={() => {
+                console.log('End chat button pressed');
+                const cleanedMessages = messages.map(({ id, ...rest }) => rest); // Clean messages
+                navigation.navigate('Summary', {cleanedMessages}); // Pass cleaned messages
+              }}
+            />
+        ),
+    });
+  }, [navigation, messages]);
 
-  
+
+
+  // Show initial bot message after a delay
+  useEffect(() => {
+    const showInitialBotMessage = () => {
+      setTimeout(() => {
+        const botMessage = {
+          id: Date.now().toString() + '-bot',
+          role: "model",
+          parts: [{ text: "Hello, this is MindLink, your personal guide for all your emotions. This is a safe space; all data is stored locally. So, what's on your mind today?" }]
+        };
+        setMessages((prev) => [...prev, botMessage]);
+      }, 1500); // artificial delay
+    };
+
+    showInitialBotMessage();
+  }, []);
+
+
+
   const API_URL = 'https://zesty-vacherin-99a16b.netlify.app/api/app/';
 
   const handleSend = async () => {
@@ -34,13 +67,13 @@ const ChatScreen = () => {
     const newMessage = {
       id: Date.now().toString(),
       role: "user",
-      parts: [{ text: inputMessage }]
+      parts: [{ text: inputMessage.trim() }]
     };
 
     setMessages(prev => {
       // Create cleaned messages FROM THE PREV STATE + NEW MESSAGE
       const messagesForApi = [...prev, newMessage].map(({ id, ...rest }) => rest);
-        
+
       // Fire API call INSIDE the state updater
       // This ensures we use the latest state
       sendToApi(messagesForApi); 
@@ -49,7 +82,7 @@ const ChatScreen = () => {
       return [...prev, newMessage];
     });
     console.log(messages);
-
+    
     setInputMessage('');
   }
 
@@ -61,26 +94,37 @@ const ChatScreen = () => {
         console.log('Sending request with:', {
             contents: cleanedMessages,
             systemInstruction: {
-            role: "user",
-            parts: [{ text: "..." }]
+              role: "user",
+              parts: [{ text: "..." }]
             }
         });
 
         const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-            'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-              contents: cleanedMessages,
-              systemInstruction: {
-                role: "user",
-                parts: [{ 
-                  text: SYSTEM_INSTRUCTION
-                }]
-              }
-            }),
+          method: 'POST',
+          headers: {
+          'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            contents: cleanedMessages,
+            systemInstruction: {
+              role: "user",
+              parts: [{ 
+                text: SYSTEM_INSTRUCTION
+              }]
+              },
+          // for future use (when thinking is not experimental anymore)
+          //  generationConfig: {
+          //     thinkingConfig: {
+          //       thinkingBudget: 1024
+          //     }
+          //   }
+            
+          }),
         });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
 
         console.log('successfully sent');
 
@@ -90,7 +134,7 @@ const ChatScreen = () => {
         const botMessage = {
             id: Date.now().toString() + '-bot',
             role: "model",
-            parts: [{ text: data.candidates[0].content.parts[0].text }]
+            parts: [{ text: data.candidates[0].content.parts[0].text.trim() }]
         };
 
         setMessages((prev) => [...prev, botMessage]);
@@ -165,48 +209,50 @@ const ChatScreen = () => {
 
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={80} // Dynamically set offset
-      style={styles.container}
-    >
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.messagesList}
-        onContentSizeChange={() => flatListRef.current.scrollToEnd()}
-      />
-
-      <SafeAreaView style={styles.inputContainer}>
-        <TextInput
-          style={[styles.input, { height: Math.max(40, inputHeight) }]} // Adjust height dynamically
-          value={inputMessage}
-          onChangeText={setInputMessage}
-          placeholder="Type your message..."
-          placeholderTextColor="#999"
-          editable={!isLoading}
-          multiline={true} // Enable multiline
-          onContentSizeChange={(event) => {
-            setInputHeight(event.nativeEvent.contentSize.height); // Dynamically adjust height
-          }}
-          textAlignVertical="top" // Ensure text starts at the top
+    <>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={80} // Dynamically set offset
+        style={styles.container}
+      >
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.messagesList}
+          onContentSizeChange={() => flatListRef.current.scrollToEnd()}
         />
 
-        <TouchableOpacity
-          style={styles.sendButton}
-          onPress={handleSend}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.sendButtonText}>Send</Text>
-          )}
-        </TouchableOpacity>
-      </SafeAreaView>
-    </KeyboardAvoidingView>
+        <SafeAreaView style={styles.inputContainer}>
+          <TextInput
+            style={[styles.input, { height: Math.max(40, inputHeight) }]} // Adjust height dynamically
+            value={inputMessage}
+            onChangeText={setInputMessage}
+            placeholder="Type your message..."
+            placeholderTextColor="#999"
+            editable={!isLoading}
+            multiline={true} // Enable multiline
+            onContentSizeChange={(event) => {
+              setInputHeight(event.nativeEvent.contentSize.height); // Dynamically adjust height
+            }}
+            textAlignVertical="top" // Ensure text starts at the top
+          />
+
+          <TouchableOpacity
+            style={styles.sendButton}
+            onPress={handleSend}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.sendButtonText}>Send</Text>
+            )}
+          </TouchableOpacity>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    </>
   );
 };
 
@@ -239,10 +285,12 @@ const styles = StyleSheet.create({
   },
   userMessageText: {
     fontSize: 16,
-    color: '#000',
+    textAlign: 'justify',
+    color: '#fff',
   },
   botMessageText: {
     fontSize: 16,
+    textAlign: 'justify',
     color: '#000',
   },
   inputContainer: {
