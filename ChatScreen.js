@@ -18,13 +18,14 @@ import { Button, Header } from 'react-native-elements'; // Import Header compone
 import * as FileSystem from 'expo-file-system'; // Replace RNFS with FileSystem
 import { Asset } from 'expo-asset';
 
-const ChatScreen = ({navigation}) => {
+const ChatScreen = ({ navigation, route }) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [inputHeight, setInputHeight] = useState(40); // New state for input height
   const flatListRef = useRef(null);
-  
+  const [storedName, setStoredName] = useState('');
+
   // Set up the header with a button
   useEffect(() => {
     navigation.setOptions({
@@ -41,12 +42,26 @@ const ChatScreen = ({navigation}) => {
     });
   }, [navigation, messages]);
 
-
+  useEffect(() => {
+    const fetchStoredName = async () => {
+      try {
+        const storedName = await AsyncStorage.getItem('@user_name');
+        if (storedName) {
+          setStoredName(storedName); // Store the name in state
+          console.log('Stored name:', storedName);
+        }
+      } catch (error) {
+        console.error('Failed to fetch stored name:', error);
+      }
+    };
+  
+    fetchStoredName();
+  }, []);
 
   const API_URL_CHAT = 'https://zesty-vacherin-99a16b.netlify.app/api/app/';
   const API_URL_FILE = 'https://zesty-vacherin-99a16b.netlify.app/api/upload/';
 
-//   // uploading pdf file to the API
+//   // TODO DO NOT DELETE uploading pdf file to the API
 //   const uploadPDF = async (filePath, fileName, mimeType) => {
 //     console.log('Uploading PDF:', filePath, fileName, mimeType);
 
@@ -186,7 +201,7 @@ const ChatScreen = ({navigation}) => {
         const botMessage = {
           id: Date.now().toString() + '-bot',
           role: "model",
-          parts: [{ text: "Hello, this is MindLink, your personal guide for all your emotions. This is a safe space; all data is stored locally. So, what's on your mind today?" }]
+          parts: [{ text: `Hello ${storedName}, this is MindLink, your personal guide for all your emotions. This is a safe space; all data is stored locally. So, what's on your mind today?` }]
         };
         setMessages((prev) => [...prev, botMessage]);
       }, 1500); // artificial delay
@@ -194,8 +209,6 @@ const ChatScreen = ({navigation}) => {
 
     showInitialBotMessage();
   }, []);
-
-
 
   const handleSend = async () => {
     if (!inputMessage.trim()) return;
@@ -248,7 +261,7 @@ const ChatScreen = ({navigation}) => {
                 text: SYSTEM_INSTRUCTION
               }]
               },
-          // for future use (when thinking is not experimental anymore)
+        // for future use (when thinking is not experimental anymore)
           //  generationConfig: {
           //     thinkingConfig: {
           //       thinkingBudget: 1024
@@ -289,8 +302,6 @@ const ChatScreen = ({navigation}) => {
         }
     };
 
-
-
   const storeChat = async () => {
     try {
       const chatId = '@chat_' + Date.now(); // Generate a unique ID for the chat
@@ -314,8 +325,6 @@ const ChatScreen = ({navigation}) => {
       saveChatOnExit(); // Ensure chat is saved when component unmounts
     };
   }, [messages]);
-
-
 
   const renderFormattedText = (text) => {
     const parts = text.split(/(\*\*.*?\*\*)/g);
@@ -341,8 +350,6 @@ const ChatScreen = ({navigation}) => {
         </Text>
     </View>
   );
-
-
 
   return (
     <>
@@ -391,8 +398,6 @@ const ChatScreen = ({navigation}) => {
     </>
   );
 };
-
-
 
 // Styles for ChatScreen 
 const styles = StyleSheet.create({
