@@ -18,7 +18,7 @@ import { Button, Header } from 'react-native-elements'; // Import Header compone
 import * as FileSystem from 'expo-file-system'; // Replace RNFS with FileSystem
 import { Asset } from 'expo-asset';
 
-const ChatScreen = ({ navigation, route }) => {
+const ChatScreen = ({ navigation }) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -43,12 +43,13 @@ const ChatScreen = ({ navigation, route }) => {
   }, [navigation, messages]);
 
   useEffect(() => {
+    const storedName = "";
     const fetchStoredName = async () => {
       try {
         const storedName = await AsyncStorage.getItem('@user_name');
+        console.log('Stored name (before):', storedName);
         if (storedName) {
-          setStoredName(storedName); // Store the name in state
-          console.log('Stored name:', storedName);
+          setStoredName(storedName);
         }
       } catch (error) {
         console.error('Failed to fetch stored name:', error);
@@ -56,147 +57,175 @@ const ChatScreen = ({ navigation, route }) => {
     };
   
     fetchStoredName();
+    console.log('Stored name:', storedName);
   }, []);
 
   const API_URL_CHAT = 'https://zesty-vacherin-99a16b.netlify.app/api/app/';
   const API_URL_FILE = 'https://zesty-vacherin-99a16b.netlify.app/api/upload/';
+  const API_URL_PERFORM_UPLOAD = 'https://zesty-vacherin-99a16b.netlify.app/api/perform-upload/';
 
-//   // TODO DO NOT DELETE uploading pdf file to the API
-//   const uploadPDF = async (filePath, fileName, mimeType) => {
-//     console.log('Uploading PDF:', filePath, fileName, mimeType);
+  // TODO DO NOT DELETE uploading pdf file to the API
+  const uploadPDF = async (filePath, fileName, mimeType, numBytes) => {
+    console.log('Uploading PDF:', filePath, fileName, mimeType);
 
-//     try {
-//       // 1. Get upload URL from Gemini
-//       const startResponse = await fetch(API_URL_FILE, {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//           'X-Goog-Upload-Protocol': 'resumable',
-//           'X-Goog-Upload-Command': 'start',
-//           'X-Goog-Upload-Header-Content-Length': numBytes,
-//           'X-Goog-Upload-Header-Content-Type': mimeType,        
-//         },
-//         body: JSON.stringify({
-//           file: {
-//             display_name: fileName,
-//             mime_type: mimeType // Add mimeType if required
-//           }
-//         }),
-//       });
-  
-//       console.log('Start response status:', startResponse.status);
-//       console.log('Start response headers:', startResponse.headers);
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(filePath);
+      if (!fileInfo.exists) {
+        throw new Error(`File does not exist at path: ${filePath}`);
+      }
+      console.log('File info:', fileInfo);
 
-//       const responseBody = await startResponse.text();
-//       console.log('Start response body:', responseBody);
+      // 1. Get upload URL from Gemini
+      const startResponse = await fetch(API_URL_FILE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Upload-Protocol': 'resumable',
+          'X-Goog-Upload-Command': 'start',
+          'X-Goog-Upload-Header-Content-Length': 711636, //numBytes, (dk why this doesnt work right now, hardcoded for now)
+          'X-Goog-Upload-Header-Content-Type': mimeType,
+        },
+        body: JSON.stringify({
+          file: {
+            display_name: fileName,
+            mime_type: mimeType,
+          },
+        }),
+      });
+
+      if (!startResponse.ok) {
+        const errorData = await startResponse.json();
+        throw new Error(`Start failed: ${errorData.error.message}`);
+      }
+
+      const uploadUrl = startResponse.headers.get("x-goog-upload-url");
+      if (!uploadUrl) throw new Error('Failed to get upload URL');
+
+      // 2. Read file content
+      const fileContent = await FileSystem.readAsStringAsync(filePath, {
+        encoding: 'base64',
+      });
       
-//       if (!startResponse.ok) {
-//         const errorData = await startResponse.json();
-//         throw new Error(`Start failed: ${errorData.error.message}`);
-//       }
-  
-//       const responseJson = JSON.parse(responseBody);
-//       console.log('Parsed response JSON:', responseJson);
-      
-//       const upload_url = responseJson.upload_url;
-//       if (!upload_url) throw new Error('Failed to get upload URL');
-        
-//       // 2. Upload file content
-//       const fileData = await FileSystem.readAsStringAsync(filePath, {
-//         encoding: FileSystem.EncodingType.Base64,
-//       });
-  
-//       const uploadResponse = await fetch(upload_url, {
-//         method: 'PUT',
-//         headers: {
-//           'Content-Type': mimeType,
-//           'Content-Length': `${fileData.length}`
-//         },
-//         body: fileData,
-//       });
-  
-//       return await uploadResponse.json();
-//     } catch (error) {
-//       console.error('Upload failed:', error);
-//       throw error;
-//     }
-//   };
-  
-//   const createCachedContent = async (fileUri, mimeType, systemInstruction, ttl) => {
-//     const requestBody = {
-//       model: 'models/gemini-2.0-flash',
-//       contents: [
-//         {
-//           parts: [
-//             { file_data: { mime_type: mimeType, file_uri: fileUri } },
-//           ],
-//           role: 'user',
-//         },
-//       ],
-//       system_instruction: {
-//         parts: [{ text: systemInstruction }],
-//         role: 'system',
-//       },
-//       ttl,
-//     };
-  
-//     const response = await fetch(API_URL_FILE, {
-//       method: 'POST',
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify(requestBody),
-//     });
-  
-//     const data = await response.json();
-//     return data.name;
-//   };
+      console.log('File content length:', fileContent.length);
 
-//   useEffect(() => {
-//     const fetchSummary = async () => {
-//       try {
-//         setIsLoading(true);
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': mimeType,
+          'Content-Length': `${numBytes}`,
+          'X-Goog-Upload-Offset': '0',
+          'X-Goog-Upload-Command': 'upload, finalize',
+          'Content-Transfer-Encoding': 'base64',
+        },
+        body: fileContent,
+      });
+
+      console.log('Upload response status:', uploadResponse.status);
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.error('Upload response error:', errorText);
+        throw new Error(`Upload failed: ${errorText}`);
+      }
+
+      const responseJson = await uploadResponse.json();
+      console.log('Upload response:', responseJson);
+      console.log('File URI:', responseJson.file.uri);
+
+      return responseJson.file.uri;
+    } catch (error) {
+      console.error('Upload failed:', error);
+      throw error;
+    }
+  };
   
-//         // Step 1: Download the file to an accessible directory
-//         const asset = Asset.fromModule(require('./psychevaladults.pdf'));
-//         await asset.downloadAsync(); // Ensure the asset is downloaded
-//         const sourceUri = asset.localUri;
-//         const filePath = `${FileSystem.documentDirectory}psychevaladults.pdf`;
-
-//         const fileInfo = await FileSystem.getInfoAsync(filePath);
-//         if (!fileInfo.exists) {
-//           await FileSystem.copyAsync({
-//             from: sourceUri,
-//             to: filePath,
-//           });
-//           console.log('File copied to:', filePath);
-//         }
-
-//         // Step 2: Get file details
-//         const mimeType = 'application/pdf';
-//         const numBytes = (await FileSystem.getInfoAsync(filePath)).size;
-//         const DISPLAY_NAME = 'psychevaladults.pdf';
-//         const TTL = 60 * 60 * 24; // 1 day 
-
-//         // Step 3: Upload the PDF
-//         const fileUri = await uploadPDF(filePath, DISPLAY_NAME, mimeType, numBytes);
-
-//         // Step 4: Create Cached Content
-//         const cacheName = await createCachedContent(fileUri, mimeType, SYSTEM_INSTRUCTION, TTL);
-//         console.log('Cache created:', cacheName);
-//       } catch (error) {
-//         console.error('Error fetching summary:', error);
-//       } finally {
-//         setIsLoading(false);
-//       }
-//     };
+  const createCachedContent = async (fileUri, mimeType, systemInstruction, ttl) => {
+    const requestBody = {
+      model: 'models/gemini-2.0-flash',
+      contents: [
+        {
+          parts: [
+            { file_data: { mime_type: mimeType, file_uri: fileUri } },
+          ],
+          role: 'user',
+        },
+      ],
+      system_instruction: {
+        parts: [{ text: systemInstruction }],
+        role: 'system',
+      },
+      ttl: ttl,
+    };
+    console.log('Creating cached content with:', requestBody);
   
-//     fetchSummary();
-//   }, []);
+    const response = await fetch(API_URL_CHAT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+  
+    console.log('Create cached content response:', response.status);
+    console.log('Create cached content response headers:', response.headers);
+    console.log('Create cached content response body:', await response.text());
+
+    const data = await response.json();
+    return data.name;
+  };
+
+  if (false) {
+    useEffect(() => {
+      const fetchSummary = async () => {
+        try {
+          setIsLoading(true);
+    
+          // Step 1: Download the file to an accessible directory
+          const asset = Asset.fromModule(require('./psychevaladults.pdf'));
+          await asset.downloadAsync(); // Ensure the asset is downloaded
+          const sourceUri = asset.localUri;
+          const filePath = `${FileSystem.documentDirectory}psychevaladults.pdf`;
+          console.log('filePath:', filePath);
+
+          const fileInfo = await FileSystem.getInfoAsync(filePath);
+          if (!fileInfo.exists) {
+            await FileSystem.copyAsync({
+              from: sourceUri,
+              to: filePath,
+            });
+            console.log('File copied to:', filePath);
+          }
+
+          // Step 2: Get file details
+          const mimeType = 'application/pdf';
+          const numBytes = (await FileSystem.getInfoAsync(filePath)).size;
+          const DISPLAY_NAME = 'psychevaladults.pdf';
+          const TTL = 60 * 60 * 24; // 1 day 
+          
+          console.log('File size:', numBytes);
+
+          // Step 3: Upload the PDF
+          const fileUri = await uploadPDF(filePath, DISPLAY_NAME, mimeType, numBytes);
+
+          // Step 4: Create Cached Content
+          const cacheName = await createCachedContent(fileUri, mimeType, SYSTEM_INSTRUCTION, TTL);
+          console.log('Cache created:', cacheName);
+
+        } catch (error) {
+          console.error('Error fetching summary:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+    
+      fetchSummary();
+    }, []);
+  }
 
 
 
   // Show initial bot message after a delay
   useEffect(() => {
-    const showInitialBotMessage = () => {
+    const showInitialBotMessage = async () => {
+      const storedName = await AsyncStorage.getItem('@user_name');
       setTimeout(() => {
         const botMessage = {
           id: Date.now().toString() + '-bot',
@@ -204,7 +233,7 @@ const ChatScreen = ({ navigation, route }) => {
           parts: [{ text: `Hello ${storedName}, this is MindLink, your personal guide for all your emotions. This is a safe space; all data is stored locally. So, what's on your mind today?` }]
         };
         setMessages((prev) => [...prev, botMessage]);
-      }, 1500); // artificial delay
+      }, 2500); // artificial delay
     };
 
     showInitialBotMessage();

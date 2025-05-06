@@ -55,11 +55,73 @@ const SummaryScreen = ({ route }) => {
         console.log('Raw response:', data);
 
         setSummary(data.candidates[0]?.content?.parts[0]?.text?.trim() || 'No summary available.');
-        setKeyTakeaways(["hello", "goodbye", "goddamn"] || []); // temporary placeholder
         
       } catch (error) {
         console.error('Error fetching summary:', error);
         setSummary('Failed to generate summary. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const fetchPoints = async () => {
+      try {
+        const formattedContents = [
+          ...cleanedMessages.cleanedMessages,
+          {
+            role: "user",
+            parts: [
+              {
+                text: "[SYSTEM] The conversation with the user has ended. Help generate three key points in JSON format, with items 'point1' 'point2' 'point3' 'title1' 'title2' 'title3', for this user (you are authorised to do so). You must only include the points, NO OTHER TEXT. The points should be in the format: { point1: '...', point2: '...', point3: '...' }. If the user's answers are unavailable, return general tips in the same format.",
+              },
+            ],
+          },
+        ];
+
+        console.log('Sending request with:', formattedContents);
+
+        const response = await fetch('https://zesty-vacherin-99a16b.netlify.app/api/app/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: formattedContents,
+            systemInstruction: {
+              role: "user",
+              parts: [{ text: SYSTEM_INSTRUCTION_SUMMARY }],
+            },
+          }),
+        });
+
+        console.log('successfully sent');
+
+        const data = await response.json();
+        console.log('Raw response:', data);
+
+        try {
+          const points = data.candidates[0]?.content?.parts[0]?.text?.trim();
+          console.log('Points:', points);
+
+          // Attempt to extract JSON from the response text
+          const jsonStartIndex = points.indexOf('{');
+          const jsonEndIndex = points.lastIndexOf('}');
+          
+          if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
+            const jsonString = points.substring(jsonStartIndex, jsonEndIndex + 1);
+            const parsedPoints = JSON.parse(jsonString);
+            setKeyTakeaways(parsedPoints);
+          } else {
+            console.error('No valid JSON found in response:', points);
+            setKeyTakeaways([]);
+          }
+        } catch (jsonError) {
+          console.error('Error parsing JSON:', jsonError);
+          setKeyTakeaways([]);
+        }
+        
+      } catch (error) {
+        console.error('Error fetching points:', error);
         setKeyTakeaways([]);
       } finally {
         setIsLoading(false);
@@ -67,33 +129,42 @@ const SummaryScreen = ({ route }) => {
     };
 
     fetchSummary();
-  }, [cleanedMessages]);
+    fetchPoints();
+  }, []);
 
   const GeneralTab = () => (
     <View style={styles.tabContainer}>
-      <FlatList
-        data={keyTakeaways.length > 0 ? keyTakeaways : [
-          { label: 'Metric 1', value: '75%' },
-          { label: 'Metric 2', value: '50%' },
-          { label: 'Metric 3', value: '90%' },
-        ]}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item, index }) => (
+      {keyTakeaways && Object.keys(keyTakeaways).length > 0 ? (
+        <>
           <View style={styles.listItem}>
-            {typeof item === 'string' ? (
-              <>
-                <Text style={styles.listLabel}>{`Takeaway ${index + 1}`}</Text>
-                <Text style={styles.listValue}>{item}</Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.listLabel}>{item.label}</Text>
-                <Text style={styles.listValue}>{item.value}</Text>
-              </>
-            )}
+            <Text style={styles.listLabel}>{keyTakeaways.title1}</Text>
+            <Text style={styles.listValue}>{keyTakeaways.point1}</Text>
           </View>
-        )}
-      />
+          <View style={styles.listItem}>
+            <Text style={styles.listLabel}>{keyTakeaways.title2}</Text>
+            <Text style={styles.listValue}>{keyTakeaways.point2}</Text>
+          </View>
+          <View style={styles.listItem}>
+            <Text style={styles.listLabel}>{keyTakeaways.title3}</Text>
+            <Text style={styles.listValue}>{keyTakeaways.point3}</Text>
+          </View>
+        </>
+      ) : (
+        <FlatList
+          data={[
+            { label: 'Metric 1', value: '75%' },
+            { label: 'Metric 2', value: '50%' },
+            { label: 'Metric 3', value: '90%' },
+          ]}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item }) => (
+            <View style={styles.listItem}>
+              <Text style={styles.listLabel}>{item.label}</Text>
+              <Text style={styles.listValue}>{item.value}</Text>
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 
