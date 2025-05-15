@@ -21,6 +21,10 @@ const SummaryScreen = ({ route, navigation }) => {
     { key: 'history', title: 'History' },
   ]);
 
+  // Check if this is part of the initial flow (called directly from ChatScreen)
+  const isInitialFlow = route.params?.isInitialFlow || 
+                        (route.params?.cleanedMessages && route.params?.cleanedMessages.length > 0);
+
   // Fetch user name from AsyncStorage
   useEffect(() => {
     const fetchUserName = async () => {
@@ -154,6 +158,11 @@ const SummaryScreen = ({ route, navigation }) => {
       console.error('Failed to load report:', error);
       Alert.alert("Error", "Failed to load the selected report");
     }
+  };
+
+  // Continue to next screen in the initial flow
+  const handleContinue = () => {
+    navigation.navigate('JourneyContinues');
   };
 
   useEffect(() => {
@@ -376,24 +385,38 @@ const SummaryScreen = ({ route, navigation }) => {
           <Text style={styles.loadingText}>Generating your report...</Text>
         </View>
       ) : (
-        <TabView
-          navigationState={{ index, routes }}
-          renderScene={renderScene}
-          onIndexChange={setIndex}
-          initialLayout={{ width: 300 }}
-          renderTabBar={(props) => (
-            <TabBar
-              {...props}
-              indicatorStyle={styles.tabIndicator}
-              style={styles.tabBar}
-              renderLabel={({ route }) => (
-                <Text style={styles.tabLabel}>
-                  {route.title}
-                </Text>
-              )}
-            />
+        <>
+          <TabView
+            navigationState={{ index, routes }}
+            renderScene={renderScene}
+            onIndexChange={setIndex}
+            initialLayout={{ width: 300 }}
+            renderTabBar={(props) => (
+              <TabBar
+                {...props}
+                indicatorStyle={styles.tabIndicator}
+                style={styles.tabBar}
+                renderLabel={({ route }) => (
+                  <Text style={styles.tabLabel}>
+                    {route.title}
+                  </Text>
+                )}
+              />
+            )}
+          />
+
+          {/* Continue button for initial flow */}
+          {isInitialFlow && (
+            <View style={styles.continueButtonContainer}>
+              <TouchableOpacity
+                style={styles.continueButton}
+                onPress={handleContinue}
+              >
+                <Text style={styles.continueButtonText}>Continue Your Journey</Text>
+              </TouchableOpacity>
+            </View>
           )}
-        />
+        </>
       )}
     </View>
   );
@@ -518,6 +541,33 @@ const styles = StyleSheet.create({
   reportSize: {
     fontSize: 14,
     color: '#666',
+  },
+  continueButtonContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    padding: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  continueButton: {
+    backgroundColor: '#007bff',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  continueButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   }
 });
 

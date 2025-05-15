@@ -30,13 +30,24 @@ const WelcomeScreen = ({ navigation }) => {
 
   const handleNavigate = async () => {
     try {
+      // Save the user name
       await AsyncStorage.setItem('@user_name', name);
-      // Set has_launched flag to true when user completes onboarding
-      await AsyncStorage.setItem('@has_launched', 'true');
+      
+      // Check if the initial chat is completed
+      const initialChatCompleted = await AsyncStorage.getItem('@initial_chat_completed');
+      
+      if (initialChatCompleted === 'true') {
+        // If initial chat is completed, go to MainApp (HomeScreen)
+        navigation.navigate('MainApp');
+      } else {
+        // If initial chat is not completed, go to ChatScreen
+        navigation.navigate('Chat');
+      }
     } catch (error) {
-      console.error('Failed to save data to storage:', error);
+      console.error('Failed to save data or check chat status:', error);
+      // Default to ChatScreen if there's an error
+      navigation.navigate('Chat');
     }
-    navigation.navigate('Chat');
   };
 
   return (
@@ -62,7 +73,7 @@ const WelcomeScreen = ({ navigation }) => {
               style={[styles.button, name.trim() === '' && styles.buttonDisabled]}
               disabled={name.trim() === ''}
             >
-              <Text style={styles.buttonText}>Go to Chat</Text>
+              <Text style={styles.buttonText}>Continue</Text>
             </TouchableOpacity>
           </View>
         </View>

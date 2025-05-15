@@ -35,7 +35,10 @@ const ChatScreen = ({ navigation }) => {
               onPress={() => {
                 console.log('End chat button pressed');
                 const cleanedMessages = messages.map(({ id, ...rest }) => rest); // Clean messages
-                navigation.navigate('Summary', {cleanedMessages}); // Pass cleaned messages
+                navigation.navigate('Summary', {
+                  cleanedMessages,
+                  isInitialFlow: true // Mark this as part of the initial flow
+                });
               }}
             />
         ),
@@ -335,6 +338,9 @@ const ChatScreen = ({ navigation }) => {
     try {
       const chatId = '@chat_' + Date.now(); // Generate a unique ID for the chat
       await AsyncStorage.setItem(chatId, JSON.stringify(messages));
+      
+      // We no longer mark initial chat as completed here
+      // This will be done in the JourneyContinuesScreen
     } catch (e) {
       console.error('Storage error:', e);
     }
