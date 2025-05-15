@@ -31,7 +31,7 @@ const ChatScreen = ({ navigation }) => {
     navigation.setOptions({
         headerRight: () => (
             <Button
-              title="End Chat"
+              title="Report"
               onPress={() => {
                 console.log('End chat button pressed');
                 const cleanedMessages = messages.map(({ id, ...rest }) => rest); // Clean messages
@@ -230,7 +230,7 @@ const ChatScreen = ({ navigation }) => {
         const botMessage = {
           id: Date.now().toString() + '-bot',
           role: "model",
-          parts: [{ text: `Hello ${storedName}, this is MindLink, your personal guide for all your emotions. This is a safe space; all data is stored locally. So, what's on your mind today?` }]
+          parts: [{ text: `Hello ${storedName}, this is MindLink! I'm your personal guide for all your emotions, and first we'll do a initiation chat. This is a safe space; all data is stored locally. So, what's on your mind today?` }]
         };
         setMessages((prev) => [...prev, botMessage]);
       }, 2500); // artificial delay
@@ -455,12 +455,12 @@ const styles = StyleSheet.create({
   },
   userMessageText: {
     fontSize: 16,
-    textAlign: 'justify',
+    textAlign: 'left',
     color: '#fff',
   },
   botMessageText: {
     fontSize: 16,
-    textAlign: 'justify',
+    textAlign: 'left',
     color: '#000',
   },
   inputContainer: {

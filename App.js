@@ -1,79 +1,95 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { StyleSheet, Text, View, TouchableOpacity, TextInput, ImageBackground, SafeAreaView } from 'react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ChatScreen from './ChatScreen'; // Import the ChatScreen component
-import SummaryScreen from './SummaryScreen'; // Import the SummaryScreen component
+import { Ionicons } from '@expo/vector-icons';
+
+// Import screens
+import WelcomeScreen from './WelcomeScreen';
+import ChatScreen from './ChatScreen';
+import DailyChatScreen from './DailyChatScreen';
+import HomeScreen from './HomeScreen';
+import SummaryScreen from './SummaryScreen';
 
 const Stack = createStackNavigator();
+const Tab = createBottomTabNavigator();
 
-const HomeScreen = ({ navigation }) => {
-  const [name, setName] = useState('');
-
-  useEffect(() => {
-    const loadName = async () => {
-      try {
-        const storedName = await AsyncStorage.getItem('@user_name');
-        if (storedName) {
-          setName(storedName);
-        }
-      } catch (error) {
-        console.error('Failed to load name from storage:', error);
-      }
-    };
-
-    loadName();
-  }, []);
-
-  const handleNavigate = async () => {
-    try {
-      await AsyncStorage.setItem('@user_name', name);
-    } catch (error) {
-      console.error('Failed to save name to storage:', error);
-    }
-    navigation.navigate('Chat');
-  };
-
+// Main app with bottom tab navigation
+const MainAppTabs = () => {
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <ImageBackground
-          source={{ uri: 'https://thumbs.dreamstime.com/b/mental-health-assessment-blurred-background-copy-space-concept-path-psychology-choice-future-defocused-motion-minimalistic-296432156.jpg' }} // Replace with your image URL or local asset
-          style={styles.imageBackground}
-        >
-          <Text style={styles.welcomeText}>  Welcome to MindLink  </Text>
-        </ImageBackground>
-        <View style={styles.bottomContainer}>
-          <Text style={styles.label}>How do you want us to call you?</Text>
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your name"
-              value={name}
-              onChangeText={setName}
-            />
-            <TouchableOpacity
-              onPress={handleNavigate}
-              style={[styles.button, name.trim() === '' && styles.buttonDisabled]}
-              disabled={name.trim() === ''}
-            >
-              <Text style={styles.buttonText}>Go to Chat</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </SafeAreaView>
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          if (route.name === 'Diary') {
+            iconName = focused ? 'journal' : 'journal-outline';
+          } else if (route.name === 'Chat') {
+            iconName = focused ? 'chatbubble' : 'chatbubble-outline';
+          } else if (route.name === 'Reports') {
+            iconName = focused ? 'document-text' : 'document-text-outline';
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#007bff',
+        tabBarInactiveTintColor: 'gray',
+        headerShown: true,
+      })}
+    >
+      <Tab.Screen name="Diary" component={HomeScreen} />
+      <Tab.Screen name="Chat" component={DailyChatScreen} />
+      <Tab.Screen 
+        name="Reports" 
+        component={SummaryScreen} 
+        initialParams={{ cleanedMessages: [] }}
+      />
+    </Tab.Navigator>
   );
 };
 
 export default function App() {
+  const [isFirstLaunch, setIsFirstLaunch] = useState(null);
+
+  useEffect(() => {
+    const checkFirstLaunch = async () => {
+      try {
+        const hasLaunched = await AsyncStorage.getItem('@has_launched');
+        const storedName = await AsyncStorage.getItem('@user_name');
+        
+        if (hasLaunched === 'true' && storedName) {
+          setIsFirstLaunch(false);
+        } else {
+          setIsFirstLaunch(true);
+        }
+      } catch (error) {
+        console.error('Failed to check app launch status:', error);
+        setIsFirstLaunch(true);
+      }
+    };
+
+    checkFirstLaunch();
+  }, []);
+
+  // Show loading until we check if this is first launch
+  if (isFirstLaunch === null) {
+    return null;
+  }
+
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Chat" component={ChatScreen} />
-        <Stack.Screen name="Summary" component={SummaryScreen} />
+      <Stack.Navigator 
+        initialRouteName={isFirstLaunch ? "Welcome" : "MainApp"}
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: true }} />
+        <Stack.Screen name="Summary" component={SummaryScreen} options={{ headerShown: true }} />
+        <Stack.Screen name="MainApp" component={MainAppTabs} />
       </Stack.Navigator>
     </NavigationContainer>
   );

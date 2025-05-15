@@ -1,221 +1,391 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image, FlatList, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Image, FlatList, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
 import SYSTEM_INSTRUCTION, { SYSTEM_INSTRUCTION_SUMMARY } from './systemInstruction';
 
-const SummaryScreen = ({ route }) => {
-//   console.log('moved screens', route.params);
-
-  const cleanedMessages = route.params;
-//   console.log('cleanedMessages', cleanedMessages);
-
+const SummaryScreen = ({ route, navigation }) => {
+  const cleanedMessages = route.params?.cleanedMessages || [];
   const [summary, setSummary] = useState('');
   const [keyTakeaways, setKeyTakeaways] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [index, setIndex] = useState(0);
+  const [userName, setUserName] = useState('User');
+  const [reportSaved, setReportSaved] = useState(false);
+  const [hasReport, setHasReport] = useState(false);
+  const [savedReports, setSavedReports] = useState([]);
   const [routes] = useState([
     { key: 'general', title: 'General' },
     { key: 'today', title: 'Today' },
+    { key: 'history', title: 'History' },
   ]);
 
+  // Fetch user name from AsyncStorage
   useEffect(() => {
-    const fetchSummary = async () => {
+    const fetchUserName = async () => {
       try {
-        const formattedContents = [
-          ...cleanedMessages.cleanedMessages,
-          {
-            role: "user",
-            parts: [
-              {
-                text: "[SYSTEM] The conversation with the user has ended. Help generate a preliminary user report, with the format of a professional grade report, for this user (you are authorised to do so)",
-              },
-            ],
-          },
-        ];
-
-        console.log('Sending request with:', formattedContents);
-
-        const response = await fetch('https://zesty-vacherin-99a16b.netlify.app/api/app/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: formattedContents,
-            systemInstruction: {
-              role: "user",
-              parts: [{ text: SYSTEM_INSTRUCTION_SUMMARY }],
-            },
-          }),
-        });
-
-        console.log('successfully sent');
-
-        const data = await response.json();
-        console.log('Raw response:', data);
-
-        setSummary(data.candidates[0]?.content?.parts[0]?.text?.trim() || 'No summary available.');
-        
-      } catch (error) {
-        console.error('Error fetching summary:', error);
-        setSummary('Failed to generate summary. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const fetchPoints = async () => {
-      try {
-        const formattedContents = [
-          ...cleanedMessages.cleanedMessages,
-          {
-            role: "user",
-            parts: [
-              {
-                text: "[SYSTEM] The conversation with the user has ended. Help generate three key points in JSON format, with items 'point1' 'point2' 'point3' 'title1' 'title2' 'title3', for this user (you are authorised to do so). You must only include the points, NO OTHER TEXT. The points should be in the format: { point1: '...', point2: '...', point3: '...' }. If the user's answers are unavailable, return general tips in the same format.",
-              },
-            ],
-          },
-        ];
-
-        console.log('Sending request with:', formattedContents);
-
-        const response = await fetch('https://zesty-vacherin-99a16b.netlify.app/api/app/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: formattedContents,
-            systemInstruction: {
-              role: "user",
-              parts: [{ text: SYSTEM_INSTRUCTION_SUMMARY }],
-            },
-          }),
-        });
-
-        console.log('successfully sent');
-
-        const data = await response.json();
-        console.log('Raw response:', data);
-
-        try {
-          const points = data.candidates[0]?.content?.parts[0]?.text?.trim();
-          console.log('Points:', points);
-
-          // Attempt to extract JSON from the response text
-          const jsonStartIndex = points.indexOf('{');
-          const jsonEndIndex = points.lastIndexOf('}');
-          
-          if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
-            const jsonString = points.substring(jsonStartIndex, jsonEndIndex + 1);
-            const parsedPoints = JSON.parse(jsonString);
-            setKeyTakeaways(parsedPoints);
-          } else {
-            console.error('No valid JSON found in response:', points);
-            setKeyTakeaways([]);
-          }
-        } catch (jsonError) {
-          console.error('Error parsing JSON:', jsonError);
-          setKeyTakeaways([]);
+        const storedName = await AsyncStorage.getItem('@user_name');
+        if (storedName) {
+          setUserName(storedName);
         }
-        
       } catch (error) {
-        console.error('Error fetching points:', error);
-        setKeyTakeaways([]);
-      } finally {
-        setIsLoading(false);
+        console.error('Failed to fetch stored name:', error);
       }
     };
-
-    fetchSummary();
-    fetchPoints();
+    
+    fetchUserName();
   }, []);
 
+  // Check for existing reports
+  useEffect(() => {
+    const checkForReports = async () => {
+      try {
+        // Check if we have a last saved report
+        const lastReportPath = await AsyncStorage.getItem('@last_report_path');
+        const lastReportDate = await AsyncStorage.getItem('@last_report_date');
+        
+        if (lastReportPath && lastReportDate) {
+          setHasReport(true);
+          
+          // Load the report content if we don't have messages from navigation
+          if (cleanedMessages.length === 0) {
+            try {
+              const reportContent = await FileSystem.readAsStringAsync(lastReportPath);
+              setSummary(reportContent);
+            } catch (err) {
+              console.error('Failed to load report:', err);
+              setSummary('Previously saved report could not be loaded.');
+            } finally {
+              setIsLoading(false);
+            }
+          }
+        }
+        
+        // Find all saved reports
+        const findSavedReports = async () => {
+          try {
+            const directory = FileSystem.documentDirectory;
+            const files = await FileSystem.readDirectoryAsync(directory);
+            
+            // Filter for userReport files
+            const reportFiles = files.filter(file => file.startsWith('userReport-'));
+            
+            // Get details for each report
+            const reportDetails = await Promise.all(reportFiles.map(async (file) => {
+              const filePath = `${directory}${file}`;
+              const fileInfo = await FileSystem.getInfoAsync(filePath);
+              
+              // Extract date from filename (userReport-YYYY-MM-DD.txt)
+              const datePart = file.replace('userReport-', '').replace('.txt', '');
+              
+              return {
+                name: file,
+                path: filePath,
+                date: datePart,
+                size: fileInfo.size,
+              };
+            }));
+            
+            // Sort by date (most recent first)
+            reportDetails.sort((a, b) => b.date.localeCompare(a.date));
+            
+            setSavedReports(reportDetails);
+          } catch (err) {
+            console.error('Failed to list saved reports:', err);
+            setSavedReports([]);
+          }
+        };
+        
+        findSavedReports();
+        
+      } catch (error) {
+        console.error('Failed to check for reports:', error);
+      }
+    };
+    
+    checkForReports();
+  }, [cleanedMessages]);
+
+  // Format date for filename
+  const getFormattedDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Save report to file system
+  const saveReport = async (content) => {
+    try {
+      if (!content || reportSaved) return;
+
+      const formattedDate = getFormattedDate();
+      const fileName = `userReport-${formattedDate}.txt`;
+      const filePath = `${FileSystem.documentDirectory}${fileName}`;
+      
+      await FileSystem.writeAsStringAsync(filePath, content);
+      console.log(`Report saved to: ${filePath}`);
+      
+      // Save reference in AsyncStorage for easy access
+      await AsyncStorage.setItem('@last_report_path', filePath);
+      await AsyncStorage.setItem('@last_report_date', formattedDate);
+      
+      setReportSaved(true);
+      Alert.alert(
+        "Report Saved",
+        `Your report has been saved as "${fileName}"`,
+        [{ text: "OK" }]
+      );
+    } catch (error) {
+      console.error('Failed to save report:', error);
+      Alert.alert("Error", "Failed to save the report");
+    }
+  };
+
+  // View a saved report
+  const viewReport = async (reportPath) => {
+    try {
+      const reportContent = await FileSystem.readAsStringAsync(reportPath);
+      setSummary(reportContent);
+      setIndex(1); // Switch to Today tab
+    } catch (error) {
+      console.error('Failed to load report:', error);
+      Alert.alert("Error", "Failed to load the selected report");
+    }
+  };
+
+  useEffect(() => {
+    // Only fetch a new summary if we have messages
+    if (cleanedMessages && cleanedMessages.length > 0) {
+      const fetchSummary = async () => {
+        try {
+          const formattedContents = [
+            ...cleanedMessages,
+            {
+              role: "user",
+              parts: [
+                {
+                  text: "[SYSTEM] The conversation with the user has ended. Help generate a preliminary user report, with the format of a professional grade report, for this user (you are authorised to do so)",
+                },
+              ],
+            },
+          ];
+
+          console.log('Sending request with:', formattedContents);
+
+          const response = await fetch('https://zesty-vacherin-99a16b.netlify.app/api/app/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: formattedContents,
+              systemInstruction: {
+                role: "user",
+                parts: [{ text: SYSTEM_INSTRUCTION_SUMMARY }],
+              },
+            }),
+          });
+
+          console.log('successfully sent');
+
+          const data = await response.json();
+          console.log('Raw response:', data);
+
+          const summaryText = data.candidates[0]?.content?.parts[0]?.text?.trim() || 'No summary available.';
+          setSummary(summaryText);
+          
+          // Save the report once we have content
+          await saveReport(summaryText);
+          
+        } catch (error) {
+          console.error('Error fetching summary:', error);
+          setSummary('Failed to generate summary. Please try again.');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const fetchPoints = async () => {
+        try {
+          const formattedContents = [
+            ...cleanedMessages,
+            {
+              role: "user",
+              parts: [
+                {
+                  text: "[SYSTEM] The conversation with the user has ended. Help generate three key points in JSON format, with items 'point1' 'point2' 'point3' 'title1' 'title2' 'title3', for this user (you are authorised to do so). You must only include the points, NO OTHER TEXT. The points should be in the format: { point1: '...', point2: '...', point3: '...' }. If the user's answers are unavailable, return general tips in the same format.",
+                },
+              ],
+            },
+          ];
+
+          console.log('Sending request with:', formattedContents);
+
+          const response = await fetch('https://zesty-vacherin-99a16b.netlify.app/api/app/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: formattedContents,
+              systemInstruction: {
+                role: "user",
+                parts: [{ text: SYSTEM_INSTRUCTION_SUMMARY }],
+              },
+            }),
+          });
+
+          console.log('successfully sent');
+
+          const data = await response.json();
+          console.log('Raw response:', data);
+
+          try {
+            const points = data.candidates[0]?.content?.parts[0]?.text?.trim();
+            console.log('Points:', points);
+
+            // Attempt to extract JSON from the response text
+            const jsonStartIndex = points.indexOf('{');
+            const jsonEndIndex = points.lastIndexOf('}');
+            
+            if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
+              const jsonString = points.substring(jsonStartIndex, jsonEndIndex + 1);
+              const parsedPoints = JSON.parse(jsonString);
+              setKeyTakeaways(parsedPoints);
+            } else {
+              console.error('No valid JSON found in response:', points);
+              setKeyTakeaways([]);
+            }
+          } catch (jsonError) {
+            console.error('Error parsing JSON:', jsonError);
+            setKeyTakeaways([]);
+          }
+          
+        } catch (error) {
+          console.error('Error fetching points:', error);
+          setKeyTakeaways([]);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchSummary();
+      fetchPoints();
+    } else {
+      // No messages provided, we're viewing from the tab bar
+      // Just set loading to false if we're not fetching anything
+      if (!hasReport) {
+        setIsLoading(false);
+        setSummary('No reports available yet. Complete a chat session to generate a report.');
+      }
+    }
+  }, [cleanedMessages, hasReport]);
+
   const GeneralTab = () => (
-    <View style={styles.tabContainer}>
+    <ScrollView style={styles.tabContainer}>
       {keyTakeaways && Object.keys(keyTakeaways).length > 0 ? (
         <>
-          <View style={styles.listItem}>
-            <Text style={styles.listLabel}>{keyTakeaways.title1}</Text>
-            <Text style={styles.listValue}>{keyTakeaways.point1}</Text>
+          <View style={styles.pointContainer}>
+            <Text style={styles.pointTitle}>{keyTakeaways.title1}</Text>
+            <Text style={styles.pointContent}>{keyTakeaways.point1}</Text>
           </View>
-          <View style={styles.listItem}>
-            <Text style={styles.listLabel}>{keyTakeaways.title2}</Text>
-            <Text style={styles.listValue}>{keyTakeaways.point2}</Text>
+          <View style={styles.pointContainer}>
+            <Text style={styles.pointTitle}>{keyTakeaways.title2}</Text>
+            <Text style={styles.pointContent}>{keyTakeaways.point2}</Text>
           </View>
-          <View style={styles.listItem}>
-            <Text style={styles.listLabel}>{keyTakeaways.title3}</Text>
-            <Text style={styles.listValue}>{keyTakeaways.point3}</Text>
+          <View style={styles.pointContainer}>
+            <Text style={styles.pointTitle}>{keyTakeaways.title3}</Text>
+            <Text style={styles.pointContent}>{keyTakeaways.point3}</Text>
           </View>
         </>
       ) : (
-        <FlatList
-          data={[
-            { label: 'Metric 1', value: '75%' },
-            { label: 'Metric 2', value: '50%' },
-            { label: 'Metric 3', value: '90%' },
-          ]}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.listItem}>
-              <Text style={styles.listLabel}>{item.label}</Text>
-              <Text style={styles.listValue}>{item.value}</Text>
-            </View>
-          )}
-        />
+        <View style={styles.noContentContainer}>
+          <Text style={styles.noContentText}>
+            {cleanedMessages.length > 0 
+              ? 'Generating key points from your conversation...' 
+              : 'No summary data available yet. Complete a chat session to generate insights.'}
+          </Text>
+        </View>
       )}
-    </View>
+    </ScrollView>
   );
 
   const TodayTab = () => (
-    <ScrollView contentContainerStyle={styles.tabContainer}>
-      <Text style={styles.paragraph}>
-        {summary || 'Placeholder paragraph for today\'s summary or updates.'}
+    <ScrollView style={styles.tabContainer}>
+      <Text style={styles.summaryText}>
+        {summary || 'No summary available yet. Complete a chat session to generate a report.'}
       </Text>
+      <View style={styles.bottomPadding} />
+    </ScrollView>
+  );
+
+  const HistoryTab = () => (
+    <ScrollView style={styles.tabContainer}>
+      {savedReports.length > 0 ? (
+        savedReports.map((report, index) => (
+          <TouchableOpacity 
+            key={index}
+            style={styles.reportItem}
+            onPress={() => viewReport(report.path)}
+          >
+            <Text style={styles.reportDate}>Report: {report.date}</Text>
+            <Text style={styles.reportSize}>{Math.round(report.size / 1024)} KB</Text>
+          </TouchableOpacity>
+        ))
+      ) : (
+        <View style={styles.noContentContainer}>
+          <Text style={styles.noContentText}>No saved reports found.</Text>
+        </View>
+      )}
+      <View style={styles.bottomPadding} />
     </ScrollView>
   );
 
   const renderScene = SceneMap({
     general: GeneralTab,
     today: TodayTab,
+    history: HistoryTab,
   });
 
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Image
-          source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/480px-Google_%22G%22_logo.svg.png' }}
+          source={require('./blank-profile-picture-png.webp')}
           style={styles.profileImage}
         />
         <View>
-          <Text style={styles.headerText}>[Name]</Text>
+          <Text style={styles.headerText}>{userName}</Text>
           <Text style={styles.headerSubText}>MindLink Report</Text>
         </View>
       </View>
       {isLoading ? (
-        <ActivityIndicator size="large" color="#007bff" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007bff" />
+          <Text style={styles.loadingText}>Generating your report...</Text>
+        </View>
       ) : (
-        <>
-          <TabView
-            navigationState={{ index, routes }}
-            renderScene={renderScene}
-            onIndexChange={setIndex}
-            initialLayout={{ width: 300 }}
-            renderTabBar={(props) => (
-              <TabBar
-                {...props}
-                indicatorStyle={styles.tabIndicator}
-                style={styles.tabBar}
-                renderLabel={({ route }) => (
-                  <Text style={styles.tabLabel}>
-                    {route.title}
-                  </Text>
-                )}
-              />
-            )}
-          />
-        </>
+        <TabView
+          navigationState={{ index, routes }}
+          renderScene={renderScene}
+          onIndexChange={setIndex}
+          initialLayout={{ width: 300 }}
+          renderTabBar={(props) => (
+            <TabBar
+              {...props}
+              indicatorStyle={styles.tabIndicator}
+              style={styles.tabBar}
+              renderLabel={({ route }) => (
+                <Text style={styles.tabLabel}>
+                  {route.title}
+                </Text>
+              )}
+            />
+          )}
+        />
       )}
     </View>
   );
@@ -227,16 +397,11 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#fff',
   },
-  titleText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#007bff',
-    textAlign: 'center',
-  },
-  profileContainer: {
+  headerContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+    paddingHorizontal: 16,
   },
   profileImage: {
     width: 80,
@@ -244,14 +409,8 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     marginRight: 16,
   },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 16,
-  },
   headerText: {
-    fontSize: 20,
+    fontSize: 30, 
     fontWeight: 'bold',
     color: '#007bff',
     flex: 1,
@@ -262,44 +421,96 @@ const styles = StyleSheet.create({
     color: '#007bff',
     fontWeight: 'normal',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
   tabContainer: {
     flex: 1,
     padding: 16,
   },
-  listItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+  noContentContainer: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  listLabel: {
+  noContentText: {
     fontSize: 16,
-    color: '#333',
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
   },
-  listValue: {
-    fontSize: 16,
+  pointContainer: {
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#007bff',
+  },
+  pointTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#007bff',
+    marginBottom: 8,
   },
-  paragraph: {
+  pointContent: {
     fontSize: 16,
     color: '#333',
-    textAlign: 'center',
+    lineHeight: 22,
+  },
+  summaryText: {
+    fontSize: 16,
+    color: '#333',
+    lineHeight: 24,
+    textAlign: 'left',
+    padding: 10,
+  },
+  bottomPadding: {
+    height: 60,
   },
   tabBar: {
-    backgroundColor: '#aaaaaa',
+    backgroundColor: '#f0f0f0',
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd', // Add a border for better visibility
+    borderBottomColor: '#ddd',
   },
   tabIndicator: {
     backgroundColor: '#007bff',
-    height: 3, // Make the indicator more prominent
+    height: 3,
   },
   tabLabel: {
     color: '#000000',
     fontWeight: 'bold',
-    fontSize: 16, // Increase font size for better visibility
-    textTransform: 'capitalize', // Ensure proper casing
+    fontSize: 16,
+    textTransform: 'capitalize',
   },
+  reportItem: {
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#007bff',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  reportDate: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  reportSize: {
+    fontSize: 14,
+    color: '#666',
+  }
 });
 
 export default SummaryScreen;
