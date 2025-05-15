@@ -304,7 +304,7 @@ const SummaryScreen = ({ route, navigation }) => {
       ) : (
         <View style={styles.noContentContainer}>
           <Text style={styles.noContentText}>
-            {cleanedMessages.length > 0 
+            {cleanedMessages && cleanedMessages.length > 0 
               ? 'Generating key points from your conversation...' 
               : 'No summary data available yet. Complete a chat session to generate insights.'}
           </Text>
@@ -315,16 +315,24 @@ const SummaryScreen = ({ route, navigation }) => {
 
   const TodayTab = () => (
     <ScrollView style={styles.tabContainer}>
-      <Text style={styles.summaryText}>
-        {summary || 'No summary available yet. Complete a chat session to generate a report.'}
-      </Text>
+      {summary ? (
+        <Text style={styles.summaryText}>
+          {summary}
+        </Text>
+      ) : (
+        <View style={styles.noContentContainer}>
+          <Text style={styles.noContentText}>
+            No summary available yet. Complete a chat session to generate a report.
+          </Text>
+        </View>
+      )}
       <View style={styles.bottomPadding} />
     </ScrollView>
   );
 
   const HistoryTab = () => (
     <ScrollView style={styles.tabContainer}>
-      {savedReports.length > 0 ? (
+      {savedReports && savedReports.length > 0 ? (
         savedReports.map((report, index) => (
           <TouchableOpacity 
             key={index}

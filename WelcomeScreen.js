@@ -12,41 +12,31 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const WelcomeScreen = ({ navigation }) => {
   const [name, setName] = useState('');
-  const [isFirstLaunch, setIsFirstLaunch] = useState(true);
 
   useEffect(() => {
-    const checkFirstLaunch = async () => {
+    const loadName = async () => {
       try {
-        const hasLaunched = await AsyncStorage.getItem('@has_launched');
         const storedName = await AsyncStorage.getItem('@user_name');
-        
-        if (hasLaunched === 'true' && storedName) {
-          setIsFirstLaunch(false);
+        if (storedName) {
           setName(storedName);
         }
       } catch (error) {
-        console.error('Failed to check app launch status:', error);
+        console.error('Failed to load name from storage:', error);
       }
     };
 
-    checkFirstLaunch();
+    loadName();
   }, []);
 
   const handleNavigate = async () => {
     try {
       await AsyncStorage.setItem('@user_name', name);
+      // Set has_launched flag to true when user completes onboarding
       await AsyncStorage.setItem('@has_launched', 'true');
-      
-      if (isFirstLaunch) {
-        // First time users go to onboarding chat
-        navigation.navigate('Chat');
-      } else {
-        // Returning users go straight to the main app
-        navigation.navigate('MainApp');
-      }
     } catch (error) {
-      console.error('Failed to save name to storage:', error);
+      console.error('Failed to save data to storage:', error);
     }
+    navigation.navigate('Chat');
   };
 
   return (
@@ -56,7 +46,7 @@ const WelcomeScreen = ({ navigation }) => {
           source={{ uri: 'https://thumbs.dreamstime.com/b/mental-health-assessment-blurred-background-copy-space-concept-path-psychology-choice-future-defocused-motion-minimalistic-296432156.jpg' }}
           style={styles.imageBackground}
         >
-          <Text style={styles.welcomeText}>Welcome to MindLink</Text>
+          <Text style={styles.welcomeText}>  Welcome to MindLink  </Text>
         </ImageBackground>
         <View style={styles.bottomContainer}>
           <Text style={styles.label}>How do you want us to call you?</Text>
@@ -72,16 +62,9 @@ const WelcomeScreen = ({ navigation }) => {
               style={[styles.button, name.trim() === '' && styles.buttonDisabled]}
               disabled={name.trim() === ''}
             >
-              <Text style={styles.buttonText}>
-                {isFirstLaunch ? 'Get Started' : 'Continue'}
-              </Text>
+              <Text style={styles.buttonText}>Go to Chat</Text>
             </TouchableOpacity>
           </View>
-          {!isFirstLaunch && (
-            <Text style={styles.welcomeBack}>
-              Welcome back, {name}!
-            </Text>
-          )}
         </View>
       </View>
     </SafeAreaView>
@@ -103,7 +86,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   welcomeText: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
@@ -122,9 +105,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   button: {
-    padding: 12,
+    padding: 10,
     backgroundColor: '#007bff',
-    borderRadius: 8,
+    borderRadius: 5,
   },
   buttonText: {
     color: '#fff',
@@ -132,27 +115,19 @@ const styles = StyleSheet.create({
   },
   label: {
     marginTop: 20,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
   },
   input: {
     flex: 1,
-    padding: 12,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 8,
+    borderRadius: 5,
     marginRight: 10,
-    fontSize: 16,
   },
   buttonDisabled: {
     backgroundColor: '#ccc',
-  },
-  welcomeBack: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#007bff',
-    textAlign: 'center',
   },
 });
 

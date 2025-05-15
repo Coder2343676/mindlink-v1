@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Keyboard,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from 'react-native-elements';
@@ -31,6 +32,9 @@ const DailyChatScreen = ({ navigation }) => {
   const flatListRef = useRef(null);
   const [userName, setUserName] = useState('');
   
+  // Helper function to create unique IDs - simplified to use just Date.now()
+  const createUniqueId = (prefix) => `${prefix}-${Date.now()}`;
+  
   // Set up the header with a button
   useEffect(() => {
     navigation.setOptions({
@@ -38,15 +42,19 @@ const DailyChatScreen = ({ navigation }) => {
         <Button
           title="View Report"
           onPress={() => {
-            const cleanedMessages = messages.map(({ id, ...rest }) => rest);
-            navigation.navigate('Summary', { cleanedMessages });
+            // Format messages correctly for the API
+            const formattedMessages = messages.map(msg => ({
+              role: msg.user && msg.user._id === 1 ? 'user' : 'model',
+              parts: [{ text: msg.text || '' }]
+            }));
+            navigation.navigate('Summary', { cleanedMessages: formattedMessages });
           }}
         />
       ),
     });
   }, [navigation, messages]);
 
-  // Fetch user name
+  // Fetch user name and load messages
   useEffect(() => {
     const fetchUserName = async () => {
       try {
@@ -69,14 +77,18 @@ const DailyChatScreen = ({ navigation }) => {
           setMessages(JSON.parse(savedMessages));
         } else {
           // Show welcome message if no previous messages
-          setTimeout(() => {
-            const botMessage = {
-              id: Date.now().toString() + '-bot',
-              role: "model",
-              parts: [{ text: `Welcome back, ${userName || 'there'}! How are you feeling today? I'm here to listen and support you.` }]
-            };
-            setMessages((prev) => [...prev, botMessage]);
-          }, 1000);
+          const initialMessage = {
+            _id: createUniqueId('initial-message'),
+            text: `Hi ${userName || 'there'}! How are you feeling today? I'm here to listen and chat with you.`,
+            createdAt: new Date(),
+            user: {
+              _id: 2,
+              name: 'MindLink',
+              avatar: require('./blank-profile-picture-png.webp'),
+            },
+          };
+          
+          setMessages([initialMessage]);
         }
       } catch (error) {
         console.error('Failed to load messages:', error);
@@ -86,75 +98,76 @@ const DailyChatScreen = ({ navigation }) => {
     loadMessages();
   }, [userName]);
 
-  const API_URL_CHAT = 'https://zesty-vacherin-99a16b.netlify.app/api/app/';
+  const sendMessage = async () => {
+    if (inputMessage.trim() === '') return;
 
-  const handleSend = async () => {
-    if (!inputMessage.trim()) return;
-
-    const newMessage = {
-      id: Date.now().toString(),
-      role: "user",
-      parts: [{ text: inputMessage.trim() }]
+    const userMessage = {
+      _id: createUniqueId('user'),
+      text: inputMessage,
+      createdAt: new Date(),
+      user: {
+        _id: 1,
+        name: 'User',
+      },
     };
 
-    setMessages(prev => {
-      const messagesForApi = [...prev, newMessage].map(({ id, ...rest }) => rest);
-      sendToApi(messagesForApi);
-      return [...prev, newMessage];
-    });
+    // Add user message to chat
+    setMessages(previousMessages => [...previousMessages, userMessage]);
     
+    // Clear input
     setInputMessage('');
-  };
-
-  const sendToApi = async (cleanedMessages) => {
+    
+    // Show loading state
+    setIsLoading(true);
+    
     try {
-      setIsLoading(true);
-
-      const response = await fetch(API_URL_CHAT, {
+      // Format message for API
+      const formattedContents = [
+        ...messages.map(msg => ({
+          role: msg.user._id === 1 ? 'user' : 'model',
+          parts: [{ text: msg.text }],
+        })),
+        {
+          role: 'user',
+          parts: [{ text: inputMessage }],
+        },
+      ];
+      
+      // Make API call
+      const response = await fetch('https://zesty-vacherin-99a16b.netlify.app/api/app/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          contents: cleanedMessages,
+          contents: formattedContents,
           systemInstruction: {
-            role: "user",
-            parts: [{ 
-              text: DAILY_SYSTEM_INSTRUCTION
-            }]
+            role: 'user',
+            parts: [{ text: DAILY_SYSTEM_INSTRUCTION }],
           },
         }),
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
+      
       const data = await response.json();
-
-      const botMessage = {
-        id: Date.now().toString() + '-bot',
-        role: "model",
-        parts: [{ text: data.candidates[0].content.parts[0].text.trim() }]
-      };
-
-      setMessages((prev) => {
-        const updatedMessages = [...prev, botMessage];
-        // Save messages to AsyncStorage
-        AsyncStorage.setItem('@daily_chat_messages', JSON.stringify(updatedMessages))
-          .catch(error => console.error('Failed to save messages:', error));
-        return updatedMessages;
-      });
+      const botResponse = data.candidates[0]?.content?.parts[0]?.text.trim();
+      
+      if (botResponse) {
+        const botMessage = {
+          _id: createUniqueId('bot'),
+          text: botResponse,
+          createdAt: new Date(),
+          user: {
+            _id: 2,
+            name: 'MindLink',
+            avatar: require('./blank-profile-picture-png.webp'),
+          },
+        };
+        
+        setMessages(previousMessages => [...previousMessages, botMessage]);
+      }
     } catch (error) {
-      console.error('API Error:', error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString() + '-error',
-          role: "model",
-          parts: [{ text: 'Sorry, I encountered an error. Please try again.' }]
-        },
-      ]);
+      console.error('Error sending message:', error);
+      Alert.alert('Error', 'Failed to send message. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -174,16 +187,21 @@ const DailyChatScreen = ({ navigation }) => {
     });
   };
 
-  const renderMessage = ({ item }) => (
-    <View style={[
-      styles.messageContainer,
-      item.role === 'user' ? styles.userMessageContainer : styles.botMessageContainer
-    ]}>
-      <Text style={item.role === 'user' ? styles.userMessageText : styles.botMessageText}>
-        {renderFormattedText(item.parts[0].text)}
-      </Text>
-    </View>
-  );
+  const renderMessage = ({ item }) => {
+    // Ensure user object exists to prevent crashes
+    const user = item.user || { _id: 2 }; // Default to bot if no user object
+    
+    return (
+      <View style={[
+        styles.messageContainer,
+        user._id === 1 ? styles.userMessageContainer : styles.botMessageContainer
+      ]}>
+        <Text style={user._id === 1 ? styles.userMessageText : styles.botMessageText}>
+          {renderFormattedText(item.text || '')}
+        </Text>
+      </View>
+    );
+  };
 
   return (
     <>
@@ -196,7 +214,7 @@ const DailyChatScreen = ({ navigation }) => {
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item._id || item.id || `msg-${Date.now()}-${Math.random()}`}
           contentContainerStyle={styles.messagesList}
           onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
         />
@@ -218,7 +236,7 @@ const DailyChatScreen = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.sendButton}
-            onPress={handleSend}
+            onPress={sendMessage}
             disabled={isLoading}
           >
             {isLoading ? (

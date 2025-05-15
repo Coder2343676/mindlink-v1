@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Text, ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -17,7 +17,7 @@ const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // Main app with bottom tab navigation
-const MainAppTabs = () => {
+function MainAppTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -48,10 +48,11 @@ const MainAppTabs = () => {
       />
     </Tab.Navigator>
   );
-};
+}
 
 export default function App() {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const checkFirstLaunch = async () => {
@@ -67,6 +68,8 @@ export default function App() {
       } catch (error) {
         console.error('Failed to check app launch status:', error);
         setIsFirstLaunch(true);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -74,8 +77,13 @@ export default function App() {
   }, []);
 
   // Show loading until we check if this is first launch
-  if (isFirstLaunch === null) {
-    return null;
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007bff" />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
   }
 
   return (
@@ -96,61 +104,15 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  imageBackground: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 10,
-  },
-  bottomContainer: {
-    padding: 20,
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
   },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  button: {
-    padding: 10,
-    backgroundColor: '#007bff',
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  label: {
-    marginTop: 20,
+  loadingText: {
+    marginTop: 16,
     fontSize: 16,
-    fontWeight: 'bold',
-  },
-  input: {
-    flex: 1,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
+    color: '#666',
   },
 });
