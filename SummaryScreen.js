@@ -517,7 +517,8 @@ const styles = StyleSheet.create({
     height: 3,
   },
   tabLabel: {
-    color: '#000000',
+    color: '#ffffff',
+    fontcolor: '#007bff',
     fontWeight: 'bold',
     fontSize: 16,
     textTransform: 'capitalize',

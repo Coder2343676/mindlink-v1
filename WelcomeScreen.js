@@ -28,11 +28,28 @@ const WelcomeScreen = ({ navigation }) => {
     loadName();
   }, []);
 
+  useEffect(() => {
+    const skipScreen = async () => {
+      try {
+        const initialChatCompleted = await AsyncStorage.getItem('@initial_chat_completed');
+        if (initialChatCompleted === 'true') {
+          // If initial chat is completed, go to MainApp (HomeScreen)
+          navigation.navigate('MainApp');
+        }  
+      } catch (error) {
+        console.error('Failed to check chat status:', error);
+      }
+    };
+
+    skipScreen();
+  }, []);
+
   const handleNavigate = async () => {
     try {
       // Save the user name
       await AsyncStorage.setItem('@user_name', name);
       
+      // redundancy check to ensure not complete initial chat
       // Check if the initial chat is completed
       const initialChatCompleted = await AsyncStorage.getItem('@initial_chat_completed');
       
