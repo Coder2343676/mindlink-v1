@@ -139,8 +139,8 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const saveDiaryEntry = async () => {
-    if (!diaryEntry.trim()) {
+  const saveDiaryWithContent = async (content) => {
+    if (!content.trim()) {
       Alert.alert("Empty Entry", "Please write something before saving.");
       return;
     }
@@ -154,7 +154,7 @@ const HomeScreen = ({ navigation }) => {
       const formattedDate = `${year}-${month}-${day}`;
       
       // Create diary entry with header
-      const entryWithHeader = `# Diary Entry - ${formattedDate}\n\n## Prompt:\n${prompt}\n\n## Response:\n${diaryEntry}\n`;
+      const entryWithHeader = `# Diary Entry - ${formattedDate}\n\n## Prompt:\n${prompt}\n\n## Response:\n${content}\n`;
       
       // Save to file system
       const fileName = `diary-${formattedDate}.txt`;
@@ -163,7 +163,7 @@ const HomeScreen = ({ navigation }) => {
       await FileSystem.writeAsStringAsync(filePath, entryWithHeader);
       
       // Save reference in AsyncStorage for easy access
-      await AsyncStorage.setItem('@last_diary_entry', diaryEntry);
+      await AsyncStorage.setItem('@last_diary_entry', content);
       await AsyncStorage.setItem('@last_diary_date', formattedDate);
       
       Alert.alert(
@@ -182,6 +182,10 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  const saveDiaryEntry = async () => {
+    saveDiaryWithContent(diaryEntry);
+  };
+
   // Tab for writing new entries
   const WriteTab = () => {
     // Use local state instead of parent state
@@ -195,15 +199,21 @@ const HomeScreen = ({ navigation }) => {
 
     // Handle saving from local state
     const handleSave = () => {
+      if (!localDiaryEntry.trim()) {
+        Alert.alert("Empty Entry", "Please write something before saving.");
+        return;
+      }
+      
+      // Set the parent state first
       setDiaryEntry(localDiaryEntry);
-      saveDiaryEntry();
+      
+      // Then save using the local entry directly
+      saveDiaryWithContent(localDiaryEntry);
     };
 
     return (
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="always"
-        keyboardDismissMode="none"
       >
         <View style={styles.header}>
           <Text style={styles.greeting}>Hello, {userName}!</Text>

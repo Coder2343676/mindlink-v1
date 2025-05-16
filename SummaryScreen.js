@@ -22,8 +22,7 @@ const SummaryScreen = ({ route, navigation }) => {
   ]);
 
   // Check if this is part of the initial flow (called directly from ChatScreen)
-  const isInitialFlow = route.params?.isInitialFlow || 
-                        (route.params?.cleanedMessages && route.params?.cleanedMessages.length > 0);
+  const isInitialFlow = route.params?.isInitialFlow;
 
   // Fetch user name from AsyncStorage
   useEffect(() => {

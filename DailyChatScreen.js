@@ -47,7 +47,9 @@ const DailyChatScreen = ({ navigation }) => {
               role: msg.user && msg.user._id === 1 ? 'user' : 'model',
               parts: [{ text: msg.text || '' }]
             }));
-            navigation.navigate('Summary', { cleanedMessages: formattedMessages });
+            
+            // Update the Reports tab with the current messages and switch to it
+            navigation.navigate('Reports', { cleanedMessages: formattedMessages });
           }}
         />
       ),

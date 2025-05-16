@@ -6,7 +6,12 @@ import {
   TouchableOpacity, 
   TextInput, 
   ImageBackground, 
-  SafeAreaView 
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -69,32 +74,40 @@ const WelcomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <ImageBackground
-          source={{ uri: 'https://thumbs.dreamstime.com/b/mental-health-assessment-blurred-background-copy-space-concept-path-psychology-choice-future-defocused-motion-minimalistic-296432156.jpg' }}
-          style={styles.imageBackground}
-        >
-          <Text style={styles.welcomeText}>  Welcome to MindLink  </Text>
-        </ImageBackground>
-        <View style={styles.bottomContainer}>
-          <Text style={styles.label}>How do you want us to call you?</Text>
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your name"
-              value={name}
-              onChangeText={setName}
-            />
-            <TouchableOpacity
-              onPress={handleNavigate}
-              style={[styles.button, name.trim() === '' && styles.buttonDisabled]}
-              disabled={name.trim() === ''}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView contentContainerStyle={{flexGrow: 1}} bounces={false}>
+            <ImageBackground
+              source={{ uri: 'https://thumbs.dreamstime.com/b/mental-health-assessment-blurred-background-copy-space-concept-path-psychology-choice-future-defocused-motion-minimalistic-296432156.jpg' }}
+              style={styles.imageBackground}
             >
-              <Text style={styles.buttonText}>Continue</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+              <Text style={styles.welcomeText}>  Welcome to MindLink  </Text>
+            </ImageBackground>
+            <View style={styles.bottomContainer}>
+              <Text style={styles.label}>How do you want us to call you?</Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your name"
+                  value={name}
+                  onChangeText={setName}
+                />
+                <TouchableOpacity
+                  onPress={handleNavigate}
+                  style={[styles.button, name.trim() === '' && styles.buttonDisabled]}
+                  disabled={name.trim() === ''}
+                >
+                  <Text style={styles.buttonText}>Continue</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
