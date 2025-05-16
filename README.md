@@ -101,11 +101,6 @@ MindLink integrates with a backend AI service (Gemini API) to provide:
 - Report generation
 - Key insights extraction
 
-The API endpoints are:
-
-- Chat: `https://zesty-vacherin-99a16b.netlify.app/api/app/`
-- File upload: `https://zesty-vacherin-99a16b.netlify.app/api/upload/`
-
 ## Development
 
 ### File Structure
