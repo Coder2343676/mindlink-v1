@@ -103,7 +103,7 @@ const DailyChatScreen = ({ navigation }) => {
 
     const userMessage = {
       _id: createUniqueId('user'),
-      text: inputMessage,
+      text: inputMessage.trim(),
       createdAt: new Date(),
       user: {
         _id: 1,
@@ -129,7 +129,7 @@ const DailyChatScreen = ({ navigation }) => {
         })),
         {
           role: 'user',
-          parts: [{ text: inputMessage }],
+          parts: [{ text: inputMessage.trim() }],
         },
       ];
       
