@@ -183,36 +183,62 @@ const HomeScreen = ({ navigation }) => {
   };
 
   // Tab for writing new entries
-  const WriteTab = () => (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
-        <Text style={styles.greeting}>Hello, {userName}!</Text>
-        <Text style={styles.date}>{date}</Text>
-      </View>
-      
-      <View style={styles.promptContainer}>
-        <Text style={styles.promptText}>{prompt}</Text>
-      </View>
-      
-      <View style={styles.diaryContainer}>
-        <TextInput
-          style={styles.diaryInput}
-          multiline={true}
-          placeholder="Write your thoughts here..."
-          value={diaryEntry}
-          onChangeText={setDiaryEntry}
-          textAlignVertical="top"
-        />
-      </View>
-      
-      <TouchableOpacity
-        style={styles.saveButton}
-        onPress={saveDiaryEntry}
+  const WriteTab = () => {
+    // Use local state instead of parent state
+    const [localDiaryEntry, setLocalDiaryEntry] = useState(diaryEntry);
+    const textInputRef = React.useRef(null);
+
+    // Sync local state with parent state
+    useEffect(() => {
+      setLocalDiaryEntry(diaryEntry);
+    }, [diaryEntry]);
+
+    // Handle saving from local state
+    const handleSave = () => {
+      setDiaryEntry(localDiaryEntry);
+      saveDiaryEntry();
+    };
+
+    return (
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="none"
       >
-        <Text style={styles.saveButtonText}>Save Entry</Text>
-      </TouchableOpacity>
-    </ScrollView>
-  );
+        <View style={styles.header}>
+          <Text style={styles.greeting}>Hello, {userName}!</Text>
+          <Text style={styles.date}>{date}</Text>
+        </View>
+        
+        <View style={styles.promptContainer}>
+          <Text style={styles.promptText}>{prompt}</Text>
+        </View>
+        
+        <View style={styles.diaryContainer}>
+          <TextInput
+            ref={textInputRef}
+            style={styles.diaryInput}
+            multiline={true}
+            placeholder="Write your thoughts here..."
+            value={localDiaryEntry}
+            onChangeText={setLocalDiaryEntry}
+            textAlignVertical="top"
+            autoFocus={false}
+            autoCorrect={false}
+            keyboardType="default"
+            blurOnSubmit={false}
+          />
+        </View>
+        
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={handleSave}
+        >
+          <Text style={styles.saveButtonText}>Save Entry</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    );
+  };
 
   // Tab for viewing diary history
   const HistoryTab = () => (
@@ -261,28 +287,34 @@ const HomeScreen = ({ navigation }) => {
     </View>
   );
 
+  // Memoize the tabs to prevent unnecessary re-renders
+  const writeTab = React.useMemo(() => WriteTab, [diaryEntry, prompt, userName, date]);
+  const historyTab = React.useMemo(() => HistoryTab, [savedDiaries, selectedEntry, isLoading]);
+
   const renderScene = SceneMap({
-    write: WriteTab,
-    history: HistoryTab,
+    write: writeTab,
+    history: historyTab,
   });
 
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        enabled
       >
         <TabView
           navigationState={{ index, routes }}
           renderScene={renderScene}
           onIndexChange={setIndex}
           initialLayout={{ width: 300 }}
+          swipeEnabled={false} // Disable swipe to prevent focus issues
           renderTabBar={(props) => (
             <TabBar
               {...props}
               indicatorStyle={styles.tabIndicator}
               style={styles.tabBar}
-              labelStyle={{ color: '#000000', fontWeight: 'bold' }}
               renderLabel={({ route }) => (
                 <Text style={styles.tabLabel}>
                   {route.title}

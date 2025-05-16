@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image, FlatList, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Image, FlatList, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
@@ -293,8 +293,14 @@ const SummaryScreen = ({ route, navigation }) => {
     }
   }, [cleanedMessages, hasReport]);
 
+  // Add a special style for web platforms to fix scrolling
+  const webSpecificStyle = Platform.OS === 'web' ? { height: '75vh', overflow: 'auto' } : {};
+
   const GeneralTab = () => (
-    <ScrollView style={styles.tabContainer}>
+    <ScrollView 
+      style={[styles.tabContainer, webSpecificStyle]}
+      contentContainerStyle={[styles.scrollViewContent, Platform.OS === 'web' ? { paddingBottom: 120 } : {}]}
+    >
       {keyTakeaways && Object.keys(keyTakeaways).length > 0 ? (
         <>
           <View style={styles.pointContainer}>
@@ -323,7 +329,10 @@ const SummaryScreen = ({ route, navigation }) => {
   );
 
   const TodayTab = () => (
-    <ScrollView style={styles.tabContainer}>
+    <ScrollView 
+      style={[styles.tabContainer, webSpecificStyle]}
+      contentContainerStyle={[styles.scrollViewContent, Platform.OS === 'web' ? { paddingBottom: 120 } : {}]}
+    >
       {summary ? (
         <Text style={styles.summaryText}>
           {summary}
@@ -340,7 +349,10 @@ const SummaryScreen = ({ route, navigation }) => {
   );
 
   const HistoryTab = () => (
-    <ScrollView style={styles.tabContainer}>
+    <ScrollView 
+      style={[styles.tabContainer, webSpecificStyle]}
+      contentContainerStyle={[styles.scrollViewContent, Platform.OS === 'web' ? { paddingBottom: 120 } : {}]}
+    >
       {savedReports && savedReports.length > 0 ? (
         savedReports.map((report, index) => (
           <TouchableOpacity 
@@ -368,7 +380,7 @@ const SummaryScreen = ({ route, navigation }) => {
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, Platform.OS === 'web' ? { maxHeight: '100vh', overflow: 'hidden' } : {}]}>
       <View style={styles.headerContainer}>
         <Image
           source={require('./blank-profile-picture-png.webp')}
@@ -391,6 +403,7 @@ const SummaryScreen = ({ route, navigation }) => {
             renderScene={renderScene}
             onIndexChange={setIndex}
             initialLayout={{ width: 300 }}
+            style={[styles.tabViewContainer, Platform.OS === 'web' ? { height: '80vh' } : {}]}
             renderTabBar={(props) => (
               <TabBar
                 {...props}
@@ -407,7 +420,7 @@ const SummaryScreen = ({ route, navigation }) => {
 
           {/* Continue button for initial flow */}
           {isInitialFlow && (
-            <View style={styles.continueButtonContainer}>
+            <View style={[styles.continueButtonContainer, Platform.OS === 'web' ? { position: 'sticky', zIndex: 10 } : {}]}>
               <TouchableOpacity
                 style={styles.continueButton}
                 onPress={handleContinue}
@@ -427,6 +440,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: '#fff',
+    height: '100%',
   },
   headerContainer: {
     flexDirection: 'row',
@@ -465,6 +479,15 @@ const styles = StyleSheet.create({
   tabContainer: {
     flex: 1,
     padding: 16,
+    height: '100%',
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+  tabViewContainer: {
+    flex: 1,
+    height: '100%',
   },
   noContentContainer: {
     flex: 1,
@@ -517,8 +540,7 @@ const styles = StyleSheet.create({
     height: 3,
   },
   tabLabel: {
-    color: '#ffffff',
-    fontcolor: '#007bff',
+    color: '#007bff',
     fontWeight: 'bold',
     fontSize: 16,
     textTransform: 'capitalize',
