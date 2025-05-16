@@ -31,7 +31,7 @@ const ChatScreen = ({ navigation }) => {
     navigation.setOptions({
         headerRight: () => (
             <Button
-              title="Report"
+              title="1st Report"
               onPress={() => {
                 console.log('End chat button pressed');
                 const cleanedMessages = messages.map(({ id, ...rest }) => rest); // Clean messages
