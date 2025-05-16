@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 // Import screens
 import WelcomeScreen from './WelcomeScreen';
-import ChatScreen from './ChatScreen';
+import InitChatScreen from './InitChatScreen';
 import DailyChatScreen from './DailyChatScreen';
 import HomeScreen from './HomeScreen';
 import SummaryScreen from './SummaryScreen';
@@ -82,7 +82,7 @@ export default function App() {
         }}
       >
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
-        <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: true }} />
+        <Stack.Screen name="Chat" component={InitChatScreen} options={{ headerShown: true }} />
         <Stack.Screen 
           name="Summary" 
           component={SummaryScreen} 

@@ -18,7 +18,7 @@ import { Button, Header } from 'react-native-elements'; // Import Header compone
 import * as FileSystem from 'expo-file-system'; // Replace RNFS with FileSystem
 import { Asset } from 'expo-asset';
 
-const ChatScreen = ({ navigation }) => {
+const InitChatScreen = ({ navigation }) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -434,7 +434,6 @@ const ChatScreen = ({ navigation }) => {
   );
 };
 
-// Styles for ChatScreen 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -499,4 +498,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChatScreen;
+export default InitChatScreen;
