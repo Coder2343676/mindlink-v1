@@ -325,8 +325,13 @@ const HomeScreen = ({ navigation }) => {
               {...props}
               indicatorStyle={styles.tabIndicator}
               style={styles.tabBar}
-              renderLabel={({ route }) => (
-                <Text style={styles.tabLabel}>
+              activeColor="#000000"
+              inactiveColor="#333333"
+              renderLabel={({ route, focused }) => (
+                <Text style={[
+                  styles.tabLabel,
+                  { color: focused ? '#000000' : '#333333' }
+                ]}>
                   {route.title}
                 </Text>
               )}
@@ -455,7 +460,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     color: '#000000',
-    fontWeight: 'bold',
+    fontWeight: '700',
     fontSize: 16,
     textTransform: 'capitalize',
   },

@@ -129,10 +129,13 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 10,
+    color: '#000',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)', // Adding semi-transparent background
+    padding: 8, // Adding padding
+    borderRadius: 5, // Rounded corners
+    textShadowColor: 'rgba(255, 255, 255, 0.75)', // Changed shadow to white
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
   },
   bottomContainer: {
     padding: 20,
