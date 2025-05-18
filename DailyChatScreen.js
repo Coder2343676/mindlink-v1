@@ -14,15 +14,9 @@ import {
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SYSTEM_INSTRUCTION from './systemInstruction';
 import { Button } from 'react-native-elements';
 import * as FileSystem from 'expo-file-system';
-
-// A lighter version of the system instruction for daily chats
-const DAILY_SYSTEM_INSTRUCTION = `
-You are MindLink. You are a compassionate and supportive mental wellness assistant. 
-Your role is to listen, offer support, and provide guidance on daily mental wellness topics.
-Be empathetic, encouraging, and help the user process their thoughts and emotions.
-`;
 
 const DailyChatScreen = ({ navigation }) => {
   const [messages, setMessages] = useState([]);
@@ -135,6 +129,20 @@ const DailyChatScreen = ({ navigation }) => {
         },
       ];
       
+      // Fetch the latest report to include in the system instruction
+      let latestReport = '';
+      try {
+        const lastReportPath = await AsyncStorage.getItem('@last_report_path');
+        if (lastReportPath) {
+          const reportContent = await FileSystem.readAsStringAsync(lastReportPath);
+          if (reportContent) {
+            latestReport = `\n\nLatest User Report:\n${reportContent}`;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load latest report:', err);
+      }
+      
       // Make API call
       const response = await fetch('https://zesty-vacherin-99a16b.netlify.app/api/app/', {
         method: 'POST',
@@ -145,7 +153,7 @@ const DailyChatScreen = ({ navigation }) => {
           contents: formattedContents,
           systemInstruction: {
             role: 'user',
-            parts: [{ text: DAILY_SYSTEM_INSTRUCTION }],
+            parts: [{ text: SYSTEM_INSTRUCTION + '\n\n\n' + userName + latestReport }],
           },
         }),
       });
