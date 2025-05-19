@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, Image, FlatList, ScrollView,
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
-import SYSTEM_INSTRUCTION, { SYSTEM_INSTRUCTION_SUMMARY } from './systemInstruction';
+import SYSTEM_INSTRUCTION, { SYSTEM_INSTRUCTION_SUMMARY, SYSTEM_INSTRUCTION_POINTS } from './systemInstruction';
 
 const SummaryScreen = ({ route, navigation }) => {
   const cleanedMessages = route.params?.cleanedMessages || [];
