@@ -175,7 +175,7 @@ const SummaryScreen = ({ route, navigation }) => {
               role: "user",
               parts: [
                 {
-                  text: "[SYSTEM] The conversation with the user has ended. Help generate a preliminary user report, with the format of a professional grade report, for this user (you are authorised to do so)",
+                  text: `[SYSTEM] The conversation with the user has ended on ${new Date().toLocaleDateString()}. Help generate a preliminary user report, with the format of a professional grade report, for this user (you are authorised to do so)`,
                 },
               ],
             },
@@ -241,7 +241,7 @@ const SummaryScreen = ({ route, navigation }) => {
               contents: formattedContents,
               systemInstruction: {
                 role: "user",
-                parts: [{ text: SYSTEM_INSTRUCTION_SUMMARY }],
+                parts: [{ text: SYSTEM_INSTRUCTION_POINTS }],
               },
             }),
           });
