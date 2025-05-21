@@ -13,6 +13,7 @@ import DailyChatScreen from './DailyChatScreen';
 import HomeScreen from './HomeScreen';
 import SummaryScreen from './SummaryScreen';
 import JourneyContinuesScreen from './JourneyContinuesScreen';
+import HealthDataScreen from './HealthDataScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -42,6 +43,8 @@ function MainAppTabs({ navigation }) {
             iconName = focused ? 'chatbubble' : 'chatbubble-outline';
           } else if (route.name === 'Reports') {
             iconName = focused ? 'document-text' : 'document-text-outline';
+          } else if (route.name === 'Health') {
+            iconName = focused ? 'fitness' : 'fitness-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -65,6 +68,10 @@ function MainAppTabs({ navigation }) {
         name="Reports" 
         component={SummaryScreen} 
         initialParams={{ cleanedMessages: [] }}
+      />
+      <Tab.Screen 
+        name="Health" 
+        component={HealthDataScreen} 
       />
     </Tab.Navigator>
   );
