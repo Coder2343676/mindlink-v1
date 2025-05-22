@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Keyboard,
   SafeAreaView,
+  Linking,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SYSTEM_INSTRUCTION from './systemInstruction';
@@ -362,16 +363,48 @@ const InitChatScreen = ({ navigation }) => {
   }, [messages]);
 
   const renderFormattedText = (text) => {
-    const parts = text.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, index) => {
+    // First split text by bold markers
+    const boldSplit = text.split(/(\*\*.*?\*\*)/g);
+    
+    return boldSplit.map((part, boldIndex) => {
       if (part.startsWith('**') && part.endsWith('**')) {
+        // Handle bold text
         return (
-          <Text key={index} style={{ fontWeight: 'bold' }}>
+          <Text key={`bold-${boldIndex}`} style={{ fontWeight: 'bold' }}>
             {part.slice(2, -2)}
           </Text>
         );
       }
-      return <Text key={index}>{part}</Text>;
+      
+      // For non-bold text, check for phone numbers 2896 0000 and 2382 0000
+      const phoneRegex = /(2896\s*0000|2382\s*0000)/g;
+      const phoneParts = part.split(phoneRegex);
+      
+      if (phoneParts.length === 1) {
+        // No phone numbers found
+        return <Text key={`text-${boldIndex}`}>{part}</Text>;
+      }
+      
+      // Process parts with phone numbers
+      return (
+        <Text key={`text-${boldIndex}`}>
+          {phoneParts.map((subPart, phoneIndex) => {
+            // If this part matches our target phone numbers
+            if (subPart === '2896 0000' || subPart === '2382 0000') {
+              return (
+                <Text 
+                  key={`phone-${boldIndex}-${phoneIndex}`}
+                  style={{ color: '#007bff', textDecorationLine: 'underline' }}
+                  onPress={() => Linking.openURL(`tel:${subPart.replace(/\s/g, '')}`)}
+                >
+                  {subPart}
+                </Text>
+              );
+            }
+            return <Text key={`text-${boldIndex}-${phoneIndex}`}>{subPart}</Text>;
+          })}
+        </Text>
+      );
     });
   };
 
