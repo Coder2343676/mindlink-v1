@@ -421,7 +421,8 @@ const InitChatScreen = ({ navigation }) => {
     </View>
   );
 
-  return (
+  return Platform.OS === 'web' ? (
+    // Web version - fixed height layout
     <View style={styles.absoluteContainer}>
       <View style={styles.fixedHeightContainer}>
         {/* Chat area with absolute positioning and fixed height */}
@@ -473,10 +474,60 @@ const InitChatScreen = ({ navigation }) => {
         </View>
       </View>
     </View>
+  ) : (
+    // Mobile version - with keyboard avoiding view
+    <SafeAreaView style={styles.safeAreaContainer}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={85}
+        style={styles.keyboardAvoidView}
+      >
+        <View style={styles.mobileContainer}>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.messagesList}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+          />
+          
+          <View style={styles.mobileInputContainer}>
+            <TextInput
+              style={[styles.input, { height: Math.min(80, Math.max(40, inputHeight)) }]}
+              value={inputMessage}
+              onChangeText={setInputMessage}
+              placeholder="Type your message..."
+              placeholderTextColor="#999"
+              editable={!isLoading}
+              multiline={true}
+              onContentSizeChange={(event) => {
+                setInputHeight(event.nativeEvent.contentSize.height);
+              }}
+              textAlignVertical="top"
+            />
+
+            <TouchableOpacity
+              style={styles.sendButton}
+              onPress={handleSend}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.sendButtonText}>Send</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  // Web-specific styles
   absoluteContainer: {
     position: 'absolute',
     top: 0,
@@ -506,13 +557,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     overflow: 'hidden',
   },
-  container: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
+  
+  // Mobile-specific styles
+  safeAreaContainer: {
+    flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  keyboardAvoidView: {
+    flex: 1,
+  },
+  mobileContainer: {
+    flex: 1,
+    flexDirection: 'column',
+  },
+  mobileInputContainer: {
+    flexDirection: 'row',
+    padding: 8,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
   },
   messagesList: {
     padding: 16,
