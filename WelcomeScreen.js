@@ -15,6 +15,9 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Import Helmet for web-specific meta tags
+import { Helmet } from 'react-helmet-async';
+
 const WelcomeScreen = ({ navigation }) => {
   const [name, setName] = useState('');
 
@@ -74,39 +77,55 @@ const WelcomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {Platform.OS === 'web' && (
+        <Helmet>
+          <meta 
+            name="viewport" 
+            content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no" 
+          />
+        </Helmet>
+      )}
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView contentContainerStyle={{flexGrow: 1}} bounces={false}>
+        <ScrollView contentContainerStyle={{flexGrow: 1}} bounces={false}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <ImageBackground
               source={{ uri: 'https://thumbs.dreamstime.com/b/mental-health-assessment-blurred-background-copy-space-concept-path-psychology-choice-future-defocused-motion-minimalistic-296432156.jpg' }}
               style={styles.imageBackground}
             >
               <Text style={styles.welcomeText}>  Welcome to MindLink  </Text>
             </ImageBackground>
-            <View style={styles.bottomContainer}>
-              <Text style={styles.label}>How do you want us to call you?</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your name"
-                  value={name}
-                  onChangeText={setName}
-                />
-                <TouchableOpacity
-                  onPress={handleNavigate}
-                  style={[styles.button, name.trim() === '' && styles.buttonDisabled]}
-                  disabled={name.trim() === ''}
-                >
-                  <Text style={styles.buttonText}>Continue</Text>
-                </TouchableOpacity>
-              </View>
+          </TouchableWithoutFeedback>
+          <View style={styles.bottomContainer}>
+            <Text style={styles.label}>How do you want us to call you?</Text>
+            <View style={styles.inputRow}>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your name"
+                value={name}
+                onChangeText={setName}
+                autoCapitalize='words'
+                autoCorrect={false}
+                // These properties help prevent zoom on iOS Safari
+                inputMode="text" 
+                autoComplete="name"
+                textContentType="name"
+                // Font size of at least 16px helps prevent zoom on iOS Safari
+                fontSize={16}
+              />
+              <TouchableOpacity
+                onPress={handleNavigate}
+                style={[styles.button, name.trim() === '' && styles.buttonDisabled]}
+                disabled={name.trim() === ''}
+              >
+                <Text style={styles.buttonText}>Continue</Text>
+              </TouchableOpacity>
             </View>
-          </ScrollView>
-        </TouchableWithoutFeedback>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -166,6 +185,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 5,
     marginRight: 10,
+    fontSize: 16, // Set to at least 16px to prevent iOS Safari from zooming
   },
   buttonDisabled: {
     backgroundColor: '#ccc',

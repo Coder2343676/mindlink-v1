@@ -1,13 +1,46 @@
 // npm start
 // eas deploy 
+// npx expo start --tunnel
 
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StyleSheet, Text, ActivityIndicator, View, TouchableOpacity } from 'react-native';
+import { 
+  StyleSheet, 
+  Text, 
+  ActivityIndicator, 
+  View, 
+  TouchableOpacity, 
+  Platform,
+  TextInput 
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { HelmetProvider } from 'react-helmet-async';
+
+// Apply global style to prevent zoom on iOS
+if (Platform.OS === 'web') {
+  const style = document.createElement('style');
+  style.textContent = `
+    input, textarea, select, button {
+      font-size: 16px !important;
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Override default TextInput behavior
+  const originalRender = TextInput.render;
+  TextInput.render = function(...args) {
+    const oldProps = args[0] || {};
+    const newProps = {
+      ...oldProps,
+      style: [{ fontSize: 16 }, oldProps.style],
+    };
+    args[0] = newProps;
+    return originalRender.apply(this, args);
+  };
+}
 
 // Import screens
 import WelcomeScreen from './WelcomeScreen';
@@ -81,11 +114,10 @@ function MainAppTabs({ navigation }) {
 }
 
 export default function App() {
-
-
   return (
-    <NavigationContainer>
-      <Stack.Navigator 
+    <HelmetProvider>
+      <NavigationContainer>
+        <Stack.Navigator 
         initialRouteName="Welcome"
         screenOptions={{
           headerShown: false,
@@ -106,6 +138,7 @@ export default function App() {
         <Stack.Screen name="MainApp" component={MainAppTabs} />
       </Stack.Navigator>
     </NavigationContainer>
+    </HelmetProvider>
   );
 }
 

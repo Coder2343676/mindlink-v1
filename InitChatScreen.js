@@ -12,6 +12,7 @@ import {
   Keyboard,
   SafeAreaView,
   Linking,
+  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SYSTEM_INSTRUCTION from './systemInstruction';
@@ -26,6 +27,7 @@ const InitChatScreen = ({ navigation }) => {
   const [inputHeight, setInputHeight] = useState(40); // New state for input height
   const flatListRef = useRef(null);
   const [storedName, setStoredName] = useState('');
+  const { height: screenHeight } = Dimensions.get('window');
 
   // Set up the header with a button
   useEffect(() => {
@@ -420,21 +422,22 @@ const InitChatScreen = ({ navigation }) => {
   );
 
   return (
-    <>
+    <SafeAreaView style={styles.safeAreaContainer} >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={80} // Dynamically set offset
         style={styles.container}
       >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.messagesList}
-          onContentSizeChange={() => flatListRef.current.scrollToEnd()}
-        />
-
+        <View style={styles.chatContainer}>
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.messagesList}
+              onContentSizeChange={() => flatListRef.current.scrollToEnd()}
+            />
+        </View>
         <SafeAreaView style={styles.inputContainer}>
           <TextInput
             style={[styles.input, { height: Math.max(40, inputHeight) }]} // Adjust height dynamically
@@ -463,11 +466,20 @@ const InitChatScreen = ({ navigation }) => {
           </TouchableOpacity>
         </SafeAreaView>
       </KeyboardAvoidingView>
-    </>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeAreaContainer: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  chatContainer: {
+    flex: 1,
+    position: 'relative', // Establish positioning context
+    overflow: 'hidden', // Ensure content doesn't overflow
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
