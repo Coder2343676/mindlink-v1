@@ -27,6 +27,7 @@ const DailyChatScreen = ({ navigation }) => {
   const [inputHeight, setInputHeight] = useState(40);
   const flatListRef = useRef(null);
   const [userName, setUserName] = useState('');
+  const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
   
   // Helper function to create unique IDs - simplified to use just Date.now()
   const createUniqueId = (prefix) => `${prefix}-${Date.now()}`;
@@ -248,24 +249,31 @@ const DailyChatScreen = ({ navigation }) => {
   };
 
   return (
-    <>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={80}
-        style={styles.container}
-      >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item._id || item.id || `msg-${Date.now()}-${Math.random()}`}
-          contentContainerStyle={styles.messagesList}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
-        />
+    <View style={styles.absoluteContainer}>
+      <View style={styles.fixedHeightContainer}>
+        {/* Chat area with absolute positioning and fixed height */}
+        <View style={styles.chatContainer}>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item._id || item.id || `msg-${Date.now()}-${Math.random()}`}
+            contentContainerStyle={styles.messagesList}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+            showsVerticalScrollIndicator={true}
+            scrollEnabled={true}
+            initialNumToRender={10}
+            maxToRenderPerBatch={10}
+            windowSize={10}
+            style={styles.flatListStyle}
+          />
+        </View>
 
-        <SafeAreaView style={styles.inputContainer}>
+        {/* Input area with absolute positioning at bottom */}
+        <View style={styles.inputContainer}>
           <TextInput
-            style={[styles.input, { height: Math.max(40, inputHeight) }]}
+            style={[styles.input, { height: Math.min(80, Math.max(40, inputHeight)) }]}
             value={inputMessage}
             onChangeText={setInputMessage}
             placeholder="Type your message..."
@@ -289,20 +297,50 @@ const DailyChatScreen = ({ navigation }) => {
               <Text style={styles.sendButtonText}>Send</Text>
             )}
           </TouchableOpacity>
-        </SafeAreaView>
-      </KeyboardAvoidingView>
-    </>
+        </View>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  absoluteContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: '#f5f5f5',
+    height: '100%',
+    width: '100%',
+    overflow: 'hidden',
+  },
+  fixedHeightContainer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'column',
+    height: '100%',
+  },
+  chatContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 64, // Leave space for input container
+    backgroundColor: '#f5f5f5',
+    overflow: 'hidden',
+  },
+  flatListStyle: {
+    flex: 1,
+    height: '100%',
+    width: '100%',
   },
   messagesList: {
     padding: 16,
-    paddingBottom: 60,
+    paddingBottom: 20, // Extra padding at bottom to see last message
   },
   messageContainer: {
     maxWidth: '80%',
@@ -331,11 +369,16 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   inputContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     padding: 8,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#ddd',
+    height: 64, // Fixed height for input container
   },
   input: {
     flex: 1,
