@@ -27,7 +27,7 @@ const InitChatScreen = ({ navigation }) => {
   const [inputHeight, setInputHeight] = useState(40); // New state for input height
   const flatListRef = useRef(null);
   const [storedName, setStoredName] = useState('');
-  const { height: screenHeight } = Dimensions.get('window');
+  const { height: screenHeight, width: screenWidth } = Dimensions.get('window'); // Get screen dimensions
 
   // Set up the header with a button
   useEffect(() => {
@@ -422,35 +422,41 @@ const InitChatScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.safeAreaContainer} >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={80} // Dynamically set offset
-        style={styles.container}
-      >
+    <View style={styles.absoluteContainer}>
+      <View style={styles.fixedHeightContainer}>
+        {/* Chat area with absolute positioning and fixed height */}
         <View style={styles.chatContainer}>
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              renderItem={renderMessage}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.messagesList}
-              onContentSizeChange={() => flatListRef.current.scrollToEnd()}
-            />
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.messagesList}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+            showsVerticalScrollIndicator={true}
+            scrollEnabled={true}
+            initialNumToRender={10}
+            maxToRenderPerBatch={10}
+            windowSize={10}
+            style={styles.flatListStyle}
+          />
         </View>
-        <SafeAreaView style={styles.inputContainer}>
+
+        {/* Input area with absolute positioning at bottom */}
+        <View style={styles.inputContainer}>
           <TextInput
-            style={[styles.input, { height: Math.max(40, inputHeight) }]} // Adjust height dynamically
+            style={[styles.input, { height: Math.min(80, Math.max(40, inputHeight)) }]}
             value={inputMessage}
             onChangeText={setInputMessage}
             placeholder="Type your message..."
             placeholderTextColor="#999"
             editable={!isLoading}
-            multiline={true} // Enable multiline
+            multiline={true}
             onContentSizeChange={(event) => {
-              setInputHeight(event.nativeEvent.contentSize.height); // Dynamically adjust height
+              setInputHeight(event.nativeEvent.contentSize.height);
             }}
-            textAlignVertical="top" // Ensure text starts at the top
+            textAlignVertical="top"
           />
 
           <TouchableOpacity
@@ -464,28 +470,58 @@ const InitChatScreen = ({ navigation }) => {
               <Text style={styles.sendButtonText}>Send</Text>
             )}
           </TouchableOpacity>
-        </SafeAreaView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </View>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeAreaContainer: {
-    flex: 1,
+  absoluteContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: '#f5f5f5',
+    height: '100%',
+    width: '100%',
+    overflow: 'hidden',
+  },
+  fixedHeightContainer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'column',
+    height: '100%',
   },
   chatContainer: {
-    flex: 1,
-    position: 'relative', // Establish positioning context
-    overflow: 'hidden', // Ensure content doesn't overflow
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 64, // Leave space for input container
+    backgroundColor: '#f5f5f5',
+    overflow: 'hidden',
   },
   container: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#f5f5f5',
   },
   messagesList: {
     padding: 16,
+    paddingBottom: 20, // Extra padding at bottom to see last message
+  },
+  flatListStyle: {
+    flex: 1,
+    height: '100%',
+    width: '100%',
   },
   messageContainer: {
     maxWidth: '80%',
@@ -514,11 +550,16 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   inputContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     padding: 8,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#ddd',
+    height: 64, // Fixed height for input container
   },
   input: {
     flex: 1,

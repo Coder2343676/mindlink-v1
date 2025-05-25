@@ -13,6 +13,7 @@ import {
   SafeAreaView,
   Alert,
   Linking,
+  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SYSTEM_INSTRUCTION from './systemInstruction';
