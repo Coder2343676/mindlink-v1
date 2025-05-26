@@ -1,5 +1,5 @@
 // npm start
-// eas deploy 
+// npx expo export --platform web => eas deploy => eas deploy --prod
 // npx expo start --tunnel
 
 import React, { useState, useEffect } from 'react';
