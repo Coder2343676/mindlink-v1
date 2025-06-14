@@ -236,7 +236,14 @@ const InitChatScreen = ({ navigation }) => {
         const botMessage = {
           id: Date.now().toString() + '-bot',
           role: "model",
-          parts: [{ text: `Hello ${storedName}, this is MindLink! I'm your personal guide for all your emotions, and first we'll do a initiation chat. This is a safe space; all data is stored locally. So, what's on your mind today?` }]
+          parts: [{ text: `Hello ${storedName}, welcome to MindLink!
+
+I'm here to be your personal, private guide for exploring your emotions and mental well-being. To start, we'll have a gentle chat to help me understand how best to support you.
+
+Individual conversations will **never** be stored, and summaries and insights are stored securely and locally on your device only. We will **never** share your personal data without your explicit consent!
+
+This is a safe, confidential space just for you.
+` }]
         };
         setMessages((prev) => [...prev, botMessage]);
       }, 2500); // artificial delay
