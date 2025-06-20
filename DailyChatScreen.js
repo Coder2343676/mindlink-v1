@@ -349,7 +349,7 @@ const DailyChatScreen = ({ navigation }) => {
                 textAlign: "center",
               }}
             >
-              If you are in crisis or need urgent help:
+              If you are in crisis:
             </Text>
             <Text
               style={{ fontSize: 16, marginBottom: 16, textAlign: "center" }}
@@ -366,12 +366,12 @@ const DailyChatScreen = ({ navigation }) => {
               <Text
                 style={{
                   color: "#1976d2",
-                  fontWeight: "bold",
                   fontSize: 16,
                   textDecorationLine: "underline",
                 }}
               >
-                Suicide Prevention Hotline: 2896 0000
+                Suicide Prevention Hotline:{" "}
+                <Text style={{ fontWeight: "bold" }}>2896 0000</Text>
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -383,12 +383,12 @@ const DailyChatScreen = ({ navigation }) => {
               <Text
                 style={{
                   color: "#1976d2",
-                  fontWeight: "bold",
                   fontSize: 16,
                   textDecorationLine: "underline",
                 }}
               >
-                Samaritans 24hr Hotline: 2382 0000
+                Samaritans 24hr Hotline:{" "}
+                <Text style={{ fontWeight: "bold" }}>2382 0000</Text>
               </Text>
             </TouchableOpacity>
             <Text
