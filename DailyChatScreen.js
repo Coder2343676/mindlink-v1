@@ -195,7 +195,7 @@ const DailyChatScreen = ({ navigation }) => {
 
       // Make API call
       const response = await fetch(
-        "https://zesty-vacherin-99a16b.netlify.app/api/app/",
+        "https://gemini-middleman-zeta.vercel.app/api/chat/",
         {
           method: "POST",
           headers: {

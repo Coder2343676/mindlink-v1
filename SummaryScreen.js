@@ -205,7 +205,7 @@ const SummaryScreen = ({ route, navigation }) => {
           console.log("Sending request with:", formattedContents);
 
           const response = await fetch(
-            "https://zesty-vacherin-99a16b.netlify.app/api/app/",
+            "https://gemini-middleman-zeta.vercel.app/api/chat/",
             {
               method: "POST",
               headers: {
@@ -258,7 +258,7 @@ const SummaryScreen = ({ route, navigation }) => {
           console.log("Sending request with:", formattedContents);
 
           const response = await fetch(
-            "https://zesty-vacherin-99a16b.netlify.app/api/app/",
+            "https://gemini-middleman-zeta.vercel.app/api/chat/",
             {
               method: "POST",
               headers: {
