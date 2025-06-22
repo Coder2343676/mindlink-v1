@@ -114,7 +114,7 @@ const DailyChatScreen = ({ navigation }) => {
             user: {
               _id: 2,
               name: "MindLink",
-              avatar: require("./blank-profile-picture-png.webp"),
+              avatar: require("./src/data/blank-profile-picture-png.webp"),
             },
           };
 
@@ -226,7 +226,7 @@ const DailyChatScreen = ({ navigation }) => {
           user: {
             _id: 2,
             name: "MindLink",
-            avatar: require("./blank-profile-picture-png.webp"),
+            avatar: require("./src/data/blank-profile-picture-png.webp"),
           },
         };
 

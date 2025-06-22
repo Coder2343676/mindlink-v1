@@ -1,24 +1,38 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image, FlatList, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
-import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system';
-import SYSTEM_INSTRUCTION, { SYSTEM_INSTRUCTION_SUMMARY, SYSTEM_INSTRUCTION_POINTS } from './systemInstruction';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Image,
+  FlatList,
+  ScrollView,
+  Alert,
+  TouchableOpacity,
+  Platform,
+} from "react-native";
+import { TabView, SceneMap, TabBar } from "react-native-tab-view";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system";
+import SYSTEM_INSTRUCTION, {
+  SYSTEM_INSTRUCTION_SUMMARY,
+  SYSTEM_INSTRUCTION_POINTS,
+} from "./systemInstruction";
 
 const SummaryScreen = ({ route, navigation }) => {
   const cleanedMessages = route.params?.cleanedMessages || [];
-  const [summary, setSummary] = useState('');
+  const [summary, setSummary] = useState("");
   const [keyTakeaways, setKeyTakeaways] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [index, setIndex] = useState(0);
-  const [userName, setUserName] = useState('User');
+  const [userName, setUserName] = useState("User");
   const [reportSaved, setReportSaved] = useState(false);
   const [hasReport, setHasReport] = useState(false);
   const [savedReports, setSavedReports] = useState([]);
   const [routes] = useState([
-    { key: 'general', title: 'General' },
-    { key: 'today', title: 'Today' },
-    { key: 'history', title: 'History' },
+    { key: "general", title: "General" },
+    { key: "today", title: "Today" },
+    { key: "history", title: "History" },
   ]);
 
   // Check if this is part of the initial flow (called directly from ChatScreen)
@@ -28,15 +42,15 @@ const SummaryScreen = ({ route, navigation }) => {
   useEffect(() => {
     const fetchUserName = async () => {
       try {
-        const storedName = await AsyncStorage.getItem('@user_name');
+        const storedName = await AsyncStorage.getItem("@user_name");
         if (storedName) {
           setUserName(storedName);
         }
       } catch (error) {
-        console.error('Failed to fetch stored name:', error);
+        console.error("Failed to fetch stored name:", error);
       }
     };
-    
+
     fetchUserName();
   }, []);
 
@@ -45,68 +59,75 @@ const SummaryScreen = ({ route, navigation }) => {
     const checkForReports = async () => {
       try {
         // Check if we have a last saved report
-        const lastReportPath = await AsyncStorage.getItem('@last_report_path');
-        const lastReportDate = await AsyncStorage.getItem('@last_report_date');
-        
+        const lastReportPath = await AsyncStorage.getItem("@last_report_path");
+        const lastReportDate = await AsyncStorage.getItem("@last_report_date");
+
         if (lastReportPath && lastReportDate) {
           setHasReport(true);
-          
+
           // Load the report content if we don't have messages from navigation
           if (cleanedMessages.length === 0) {
             try {
-              const reportContent = await FileSystem.readAsStringAsync(lastReportPath);
+              const reportContent = await FileSystem.readAsStringAsync(
+                lastReportPath
+              );
               setSummary(reportContent);
             } catch (err) {
-              console.error('Failed to load report:', err);
-              setSummary('Previously saved report could not be loaded.');
+              console.error("Failed to load report:", err);
+              setSummary("Previously saved report could not be loaded.");
             } finally {
               setIsLoading(false);
             }
           }
         }
-        
+
         // Find all saved reports
         const findSavedReports = async () => {
           try {
             const directory = FileSystem.documentDirectory;
             const files = await FileSystem.readDirectoryAsync(directory);
-            
+
             // Filter for userReport files
-            const reportFiles = files.filter(file => file.startsWith('userReport-'));
-            
+            const reportFiles = files.filter((file) =>
+              file.startsWith("userReport-")
+            );
+
             // Get details for each report
-            const reportDetails = await Promise.all(reportFiles.map(async (file) => {
-              const filePath = `${directory}${file}`;
-              const fileInfo = await FileSystem.getInfoAsync(filePath);
-              
-              // Extract date from filename (userReport-YYYY-MM-DD.txt)
-              const datePart = file.replace('userReport-', '').replace('.txt', '');
-              
-              return {
-                name: file,
-                path: filePath,
-                date: datePart,
-                size: fileInfo.size,
-              };
-            }));
-            
+            const reportDetails = await Promise.all(
+              reportFiles.map(async (file) => {
+                const filePath = `${directory}${file}`;
+                const fileInfo = await FileSystem.getInfoAsync(filePath);
+
+                // Extract date from filename (userReport-YYYY-MM-DD.txt)
+                const datePart = file
+                  .replace("userReport-", "")
+                  .replace(".txt", "");
+
+                return {
+                  name: file,
+                  path: filePath,
+                  date: datePart,
+                  size: fileInfo.size,
+                };
+              })
+            );
+
             // Sort by date (most recent first)
             reportDetails.sort((a, b) => b.date.localeCompare(a.date));
-            
+
             setSavedReports(reportDetails);
           } catch (err) {
-            console.error('Failed to list saved reports:', err);
+            console.error("Failed to list saved reports:", err);
             setSavedReports([]);
           }
         };
-        
+
         findSavedReports();
-        
       } catch (error) {
-        console.error('Failed to check for reports:', error);
+        console.error("Failed to check for reports:", error);
       }
     };
-    
+
     checkForReports();
   }, [cleanedMessages]);
 
@@ -114,8 +135,8 @@ const SummaryScreen = ({ route, navigation }) => {
   const getFormattedDate = () => {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
 
@@ -127,14 +148,14 @@ const SummaryScreen = ({ route, navigation }) => {
       const formattedDate = getFormattedDate();
       const fileName = `userReport-${formattedDate}.txt`;
       const filePath = `${FileSystem.documentDirectory}${fileName}`;
-      
+
       await FileSystem.writeAsStringAsync(filePath, content);
       console.log(`Report saved to: ${filePath}`);
-      
+
       // Save reference in AsyncStorage for easy access
-      await AsyncStorage.setItem('@last_report_path', filePath);
-      await AsyncStorage.setItem('@last_report_date', formattedDate);
-      
+      await AsyncStorage.setItem("@last_report_path", filePath);
+      await AsyncStorage.setItem("@last_report_date", formattedDate);
+
       setReportSaved(true);
       Alert.alert(
         "Report Saved",
@@ -142,7 +163,7 @@ const SummaryScreen = ({ route, navigation }) => {
         [{ text: "OK" }]
       );
     } catch (error) {
-      console.error('Failed to save report:', error);
+      console.error("Failed to save report:", error);
       Alert.alert("Error", "Failed to save the report");
     }
   };
@@ -154,14 +175,14 @@ const SummaryScreen = ({ route, navigation }) => {
       setSummary(reportContent);
       setIndex(1); // Switch to Today tab
     } catch (error) {
-      console.error('Failed to load report:', error);
+      console.error("Failed to load report:", error);
       Alert.alert("Error", "Failed to load the selected report");
     }
   };
 
   // Continue to next screen in the initial flow
   const handleContinue = () => {
-    navigation.navigate('JourneyContinues');
+    navigation.navigate("JourneyContinues");
   };
 
   useEffect(() => {
@@ -181,36 +202,40 @@ const SummaryScreen = ({ route, navigation }) => {
             },
           ];
 
-          console.log('Sending request with:', formattedContents);
+          console.log("Sending request with:", formattedContents);
 
-          const response = await fetch('https://zesty-vacherin-99a16b.netlify.app/api/app/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: formattedContents,
-              systemInstruction: {
-                role: "user",
-                parts: [{ text: SYSTEM_INSTRUCTION_SUMMARY }],
+          const response = await fetch(
+            "https://zesty-vacherin-99a16b.netlify.app/api/app/",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
               },
-            }),
-          });
+              body: JSON.stringify({
+                contents: formattedContents,
+                systemInstruction: {
+                  role: "user",
+                  parts: [{ text: SYSTEM_INSTRUCTION_SUMMARY }],
+                },
+              }),
+            }
+          );
 
-          console.log('successfully sent');
+          console.log("successfully sent");
 
           const data = await response.json();
-          console.log('Raw response:', data);
+          console.log("Raw response:", data);
 
-          const summaryText = data.candidates[0]?.content?.parts[0]?.text?.trim() || 'No summary available.';
+          const summaryText =
+            data.candidates[0]?.content?.parts[0]?.text?.trim() ||
+            "No summary available.";
           setSummary(summaryText);
-          
+
           // Save the report once we have content
           await saveReport(summaryText);
-          
         } catch (error) {
-          console.error('Error fetching summary:', error);
-          setSummary('Failed to generate summary. Please try again.');
+          console.error("Error fetching summary:", error);
+          setSummary("Failed to generate summary. Please try again.");
         } finally {
           setIsLoading(false);
         }
@@ -230,50 +255,55 @@ const SummaryScreen = ({ route, navigation }) => {
             },
           ];
 
-          console.log('Sending request with:', formattedContents);
+          console.log("Sending request with:", formattedContents);
 
-          const response = await fetch('https://zesty-vacherin-99a16b.netlify.app/api/app/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: formattedContents,
-              systemInstruction: {
-                role: "user",
-                parts: [{ text: SYSTEM_INSTRUCTION_POINTS }],
+          const response = await fetch(
+            "https://zesty-vacherin-99a16b.netlify.app/api/app/",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
               },
-            }),
-          });
+              body: JSON.stringify({
+                contents: formattedContents,
+                systemInstruction: {
+                  role: "user",
+                  parts: [{ text: SYSTEM_INSTRUCTION_POINTS }],
+                },
+              }),
+            }
+          );
 
-          console.log('successfully sent');
+          console.log("successfully sent");
 
           const data = await response.json();
-          console.log('Raw response:', data);
+          console.log("Raw response:", data);
 
           try {
             const points = data.candidates[0]?.content?.parts[0]?.text?.trim();
-            console.log('Points:', points);
+            console.log("Points:", points);
 
             // Attempt to extract JSON from the response text
-            const jsonStartIndex = points.indexOf('{');
-            const jsonEndIndex = points.lastIndexOf('}');
-            
+            const jsonStartIndex = points.indexOf("{");
+            const jsonEndIndex = points.lastIndexOf("}");
+
             if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
-              const jsonString = points.substring(jsonStartIndex, jsonEndIndex + 1);
+              const jsonString = points.substring(
+                jsonStartIndex,
+                jsonEndIndex + 1
+              );
               const parsedPoints = JSON.parse(jsonString);
               setKeyTakeaways(parsedPoints);
             } else {
-              console.error('No valid JSON found in response:', points);
+              console.error("No valid JSON found in response:", points);
               setKeyTakeaways([]);
             }
           } catch (jsonError) {
-            console.error('Error parsing JSON:', jsonError);
+            console.error("Error parsing JSON:", jsonError);
             setKeyTakeaways([]);
           }
-          
         } catch (error) {
-          console.error('Error fetching points:', error);
+          console.error("Error fetching points:", error);
           setKeyTakeaways([]);
         } finally {
           setIsLoading(false);
@@ -287,18 +317,24 @@ const SummaryScreen = ({ route, navigation }) => {
       // Just set loading to false if we're not fetching anything
       if (!hasReport) {
         setIsLoading(false);
-        setSummary('No reports available yet. Complete a chat session to generate a report.');
+        setSummary(
+          "No reports available yet. Complete a chat session to generate a report."
+        );
       }
     }
   }, [cleanedMessages, hasReport]);
 
   // Add a special style for web platforms to fix scrolling
-  const webSpecificStyle = Platform.OS === 'web' ? { height: '75vh', overflow: 'auto' } : {};
+  const webSpecificStyle =
+    Platform.OS === "web" ? { height: "75vh", overflow: "auto" } : {};
 
   const GeneralTab = () => (
-    <ScrollView 
+    <ScrollView
       style={[styles.tabContainer, webSpecificStyle]}
-      contentContainerStyle={[styles.scrollViewContent, Platform.OS === 'web' ? { paddingBottom: 120 } : {}]}
+      contentContainerStyle={[
+        styles.scrollViewContent,
+        Platform.OS === "web" ? { paddingBottom: 120 } : {},
+      ]}
     >
       {keyTakeaways && Object.keys(keyTakeaways).length > 0 ? (
         <>
@@ -318,9 +354,9 @@ const SummaryScreen = ({ route, navigation }) => {
       ) : (
         <View style={styles.noContentContainer}>
           <Text style={styles.noContentText}>
-            {cleanedMessages && cleanedMessages.length > 0 
-              ? 'Generating key points from your conversation...' 
-              : 'No summary data available yet. Complete a chat session to generate insights.'}
+            {cleanedMessages && cleanedMessages.length > 0
+              ? "Generating key points from your conversation..."
+              : "No summary data available yet. Complete a chat session to generate insights."}
           </Text>
         </View>
       )}
@@ -328,18 +364,20 @@ const SummaryScreen = ({ route, navigation }) => {
   );
 
   const TodayTab = () => (
-    <ScrollView 
+    <ScrollView
       style={[styles.tabContainer, webSpecificStyle]}
-      contentContainerStyle={[styles.scrollViewContent, Platform.OS === 'web' ? { paddingBottom: 120 } : {}]}
+      contentContainerStyle={[
+        styles.scrollViewContent,
+        Platform.OS === "web" ? { paddingBottom: 120 } : {},
+      ]}
     >
       {summary ? (
-        <Text style={styles.summaryText}>
-          {summary}
-        </Text>
+        <Text style={styles.summaryText}>{summary}</Text>
       ) : (
         <View style={styles.noContentContainer}>
           <Text style={styles.noContentText}>
-            No summary available yet. Complete a chat session to generate a report.
+            No summary available yet. Complete a chat session to generate a
+            report.
           </Text>
         </View>
       )}
@@ -348,19 +386,24 @@ const SummaryScreen = ({ route, navigation }) => {
   );
 
   const HistoryTab = () => (
-    <ScrollView 
+    <ScrollView
       style={[styles.tabContainer, webSpecificStyle]}
-      contentContainerStyle={[styles.scrollViewContent, Platform.OS === 'web' ? { paddingBottom: 120 } : {}]}
+      contentContainerStyle={[
+        styles.scrollViewContent,
+        Platform.OS === "web" ? { paddingBottom: 120 } : {},
+      ]}
     >
       {savedReports && savedReports.length > 0 ? (
         savedReports.map((report, index) => (
-          <TouchableOpacity 
+          <TouchableOpacity
             key={index}
             style={styles.reportItem}
             onPress={() => viewReport(report.path)}
           >
             <Text style={styles.reportDate}>Report: {report.date}</Text>
-            <Text style={styles.reportSize}>{Math.round(report.size / 1024)} KB</Text>
+            <Text style={styles.reportSize}>
+              {Math.round(report.size / 1024)} KB
+            </Text>
           </TouchableOpacity>
         ))
       ) : (
@@ -379,10 +422,15 @@ const SummaryScreen = ({ route, navigation }) => {
   });
 
   return (
-    <View style={[styles.container, Platform.OS === 'web' ? { maxHeight: '100vh', overflow: 'hidden' } : {}]}>
+    <View
+      style={[
+        styles.container,
+        Platform.OS === "web" ? { maxHeight: "100vh", overflow: "hidden" } : {},
+      ]}
+    >
       <View style={styles.headerContainer}>
         <Image
-          source={require('./blank-profile-picture-png.webp')}
+          source={require("./src/data/blank-profile-picture-png.webp")}
           style={styles.profileImage}
         />
         <View>
@@ -402,7 +450,10 @@ const SummaryScreen = ({ route, navigation }) => {
             renderScene={renderScene}
             onIndexChange={setIndex}
             initialLayout={{ width: 300 }}
-            style={[styles.tabViewContainer, Platform.OS === 'web' ? { height: '80vh' } : {}]}
+            style={[
+              styles.tabViewContainer,
+              Platform.OS === "web" ? { height: "80vh" } : {},
+            ]}
             renderTabBar={(props) => (
               <TabBar
                 {...props}
@@ -411,10 +462,12 @@ const SummaryScreen = ({ route, navigation }) => {
                 activeColor="#000000"
                 inactiveColor="#333333"
                 renderLabel={({ route, focused }) => (
-                  <Text style={[
-                    styles.tabLabel,
-                    { color: focused ? '#000000' : '#333333' }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      { color: focused ? "#000000" : "#333333" },
+                    ]}
+                  >
                     {route.title}
                   </Text>
                 )}
@@ -424,12 +477,19 @@ const SummaryScreen = ({ route, navigation }) => {
 
           {/* Continue button for initial flow */}
           {isInitialFlow && (
-            <View style={[styles.continueButtonContainer, Platform.OS === 'web' ? { position: 'sticky', zIndex: 10 } : {}]}>
+            <View
+              style={[
+                styles.continueButtonContainer,
+                Platform.OS === "web" ? { position: "sticky", zIndex: 10 } : {},
+              ]}
+            >
               <TouchableOpacity
                 style={styles.continueButton}
                 onPress={handleContinue}
               >
-                <Text style={styles.continueButtonText}>Continue Your Journey</Text>
+                <Text style={styles.continueButtonText}>
+                  Continue Your Journey
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -443,12 +503,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#fff',
-    height: '100%',
+    backgroundColor: "#fff",
+    height: "100%",
   },
   headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
     paddingHorizontal: 16,
   },
@@ -459,31 +519,31 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   headerText: {
-    fontSize: 30, 
-    fontWeight: 'bold',
-    color: '#007bff',
+    fontSize: 30,
+    fontWeight: "bold",
+    color: "#007bff",
     flex: 1,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   headerSubText: {
     fontSize: 18,
-    color: '#007bff',
-    fontWeight: 'normal',
+    color: "#007bff",
+    fontWeight: "normal",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
   tabContainer: {
     flex: 1,
     padding: 16,
-    height: '100%',
+    height: "100%",
   },
   scrollViewContent: {
     flexGrow: 1,
@@ -491,98 +551,98 @@ const styles = StyleSheet.create({
   },
   tabViewContainer: {
     flex: 1,
-    height: '100%',
+    height: "100%",
   },
   noContentContainer: {
     flex: 1,
     padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   noContentText: {
     fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
     lineHeight: 24,
   },
   pointContainer: {
     marginBottom: 20,
     padding: 15,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     borderRadius: 10,
     borderLeftWidth: 4,
-    borderLeftColor: '#007bff',
+    borderLeftColor: "#007bff",
   },
   pointTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#007bff',
+    fontWeight: "bold",
+    color: "#007bff",
     marginBottom: 8,
   },
   pointContent: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
     lineHeight: 22,
   },
   summaryText: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
     lineHeight: 24,
-    textAlign: 'left',
+    textAlign: "left",
     padding: 10,
   },
   bottomPadding: {
     height: 60,
   },
   tabBar: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    borderBottomColor: "#ddd",
   },
   tabIndicator: {
-    backgroundColor: '#007bff',
+    backgroundColor: "#007bff",
     height: 3,
   },
   tabLabel: {
-    color: '#007bff',
-    fontWeight: 'bold',
+    color: "#007bff",
+    fontWeight: "bold",
     fontSize: 16,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   reportItem: {
     padding: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     borderRadius: 8,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#007bff',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    borderLeftColor: "#007bff",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   reportDate: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   reportSize: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   continueButtonContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     left: 20,
     right: 20,
     padding: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
   },
   continueButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: "#007bff",
     borderRadius: 8,
     paddingVertical: 14,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -592,10 +652,10 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   continueButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
-  }
+    fontWeight: "bold",
+  },
 });
 
 export default SummaryScreen;
