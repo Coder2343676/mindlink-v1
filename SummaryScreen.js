@@ -68,9 +68,16 @@ const SummaryScreen = ({ route, navigation }) => {
           // Load the report content if we don't have messages from navigation
           if (cleanedMessages.length === 0) {
             try {
-              const reportContent = await FileSystem.readAsStringAsync(
-                lastReportPath
-              );
+              let reportContent = "";
+              if (Platform.OS === "web") {
+                reportContent =
+                  window.localStorage.getItem(lastReportPath) ||
+                  "Previously saved report could not be loaded.";
+              } else {
+                reportContent = await FileSystem.readAsStringAsync(
+                  lastReportPath
+                );
+              }
               setSummary(reportContent);
             } catch (err) {
               console.error("Failed to load report:", err);
@@ -84,37 +91,49 @@ const SummaryScreen = ({ route, navigation }) => {
         // Find all saved reports
         const findSavedReports = async () => {
           try {
-            const directory = FileSystem.documentDirectory;
-            const files = await FileSystem.readDirectoryAsync(directory);
-
-            // Filter for userReport files
-            const reportFiles = files.filter((file) =>
-              file.startsWith("userReport-")
-            );
-
-            // Get details for each report
-            const reportDetails = await Promise.all(
-              reportFiles.map(async (file) => {
-                const filePath = `${directory}${file}`;
-                const fileInfo = await FileSystem.getInfoAsync(filePath);
-
+            let reportDetails = [];
+            if (Platform.OS === "web") {
+              // On web, scan localStorage keys
+              const files = Object.keys(window.localStorage).filter(
+                (key) => key.startsWith("userReport-") && key.endsWith(".txt")
+              );
+              reportDetails = files.map((file) => {
                 // Extract date from filename (userReport-YYYY-MM-DD.txt)
                 const datePart = file
                   .replace("userReport-", "")
                   .replace(".txt", "");
-
+                const content = window.localStorage.getItem(file) || "";
                 return {
                   name: file,
-                  path: filePath,
+                  path: file,
                   date: datePart,
-                  size: fileInfo.size,
+                  size: content.length,
                 };
-              })
-            );
-
+              });
+            } else {
+              const directory = FileSystem.documentDirectory;
+              const files = await FileSystem.readDirectoryAsync(directory);
+              const reportFiles = files.filter((file) =>
+                file.startsWith("userReport-")
+              );
+              reportDetails = await Promise.all(
+                reportFiles.map(async (file) => {
+                  const filePath = `${directory}${file}`;
+                  const fileInfo = await FileSystem.getInfoAsync(filePath);
+                  const datePart = file
+                    .replace("userReport-", "")
+                    .replace(".txt", "");
+                  return {
+                    name: file,
+                    path: filePath,
+                    date: datePart,
+                    size: fileInfo.size,
+                  };
+                })
+              );
+            }
             // Sort by date (most recent first)
             reportDetails.sort((a, b) => b.date.localeCompare(a.date));
-
             setSavedReports(reportDetails);
           } catch (err) {
             console.error("Failed to list saved reports:", err);
@@ -178,7 +197,15 @@ const SummaryScreen = ({ route, navigation }) => {
   // View a saved report
   const viewReport = async (reportPath) => {
     try {
-      const reportContent = await FileSystem.readAsStringAsync(reportPath);
+      let reportContent = "";
+      if (Platform.OS === "web") {
+        // On web, read from localStorage
+        reportContent =
+          window.localStorage.getItem(reportPath) || "Report not found.";
+      } else {
+        // Native: read from file system
+        reportContent = await FileSystem.readAsStringAsync(reportPath);
+      }
       setSummary(reportContent);
       setIndex(1); // Switch to Today tab
     } catch (error) {
