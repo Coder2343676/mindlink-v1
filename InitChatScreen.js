@@ -342,7 +342,7 @@ This is a safe, confidential space just for you.
       const botMessage = {
         id: Date.now().toString() + "-bot",
         role: "model",
-        parts: [{ text: data.candidates[0].content.parts[0].text.trim() }],
+        parts: [{ text: (data.reply || "").trim() }],
       };
 
       setMessages((prev) => [...prev, botMessage]);

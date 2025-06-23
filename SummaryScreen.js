@@ -149,12 +149,19 @@ const SummaryScreen = ({ route, navigation }) => {
       const fileName = `userReport-${formattedDate}.txt`;
       const filePath = `${FileSystem.documentDirectory}${fileName}`;
 
-      await FileSystem.writeAsStringAsync(filePath, content);
-      console.log(`Report saved to: ${filePath}`);
-
-      // Save reference in AsyncStorage for easy access
-      await AsyncStorage.setItem("@last_report_path", filePath);
-      await AsyncStorage.setItem("@last_report_date", formattedDate);
+      if (Platform.OS === "web") {
+        // Save to localStorage on web
+        window.localStorage.setItem(fileName, content);
+        console.log(`Report saved to localStorage as: ${fileName}`);
+        await AsyncStorage.setItem("@last_report_path", fileName);
+        await AsyncStorage.setItem("@last_report_date", formattedDate);
+      } else {
+        // Native: Save to file system
+        await FileSystem.writeAsStringAsync(filePath, content);
+        console.log(`Report saved to: ${filePath}`);
+        await AsyncStorage.setItem("@last_report_path", filePath);
+        await AsyncStorage.setItem("@last_report_date", formattedDate);
+      }
 
       setReportSaved(true);
       Alert.alert(
@@ -227,8 +234,7 @@ const SummaryScreen = ({ route, navigation }) => {
           console.log("Raw response:", data);
 
           const summaryText =
-            data.candidates[0]?.content?.parts[0]?.text?.trim() ||
-            "No summary available.";
+            (data.reply || "").trim() || "No summary available.";
           setSummary(summaryText);
 
           // Save the report once we have content
@@ -280,7 +286,7 @@ const SummaryScreen = ({ route, navigation }) => {
           console.log("Raw response:", data);
 
           try {
-            const points = data.candidates[0]?.content?.parts[0]?.text?.trim();
+            const points = (data.reply || "").trim();
             console.log("Points:", points);
 
             // Attempt to extract JSON from the response text

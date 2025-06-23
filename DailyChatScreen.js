@@ -216,7 +216,7 @@ const DailyChatScreen = ({ navigation }) => {
       );
 
       const data = await response.json();
-      const botResponse = data.candidates[0]?.content?.parts[0]?.text.trim();
+      const botResponse = (data.reply || "").trim();
 
       if (botResponse) {
         const botMessage = {
