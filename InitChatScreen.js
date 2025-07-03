@@ -254,9 +254,15 @@ I'm here to be your personal, private guide for exploring your emotions and ment
 
 Individual conversations will **never** be stored, and summaries and insights are stored securely and locally on your device only. We will **never** share your personal data without your explicit consent!
 
-This is a safe, confidential space just for you.
-`,
+This is a safe, confidential space just for you.`,
             },
+          ],
+          suggestedReplies: [
+            "Talk about school",
+            "Talk about family",
+            "Talk about friends",
+            "Talk about stress",
+            "Talk about something good",
           ],
         };
         setMessages((prev) => [...prev, botMessage]);
@@ -276,16 +282,11 @@ This is a safe, confidential space just for you.
     };
 
     setMessages((prev) => {
-      // Create cleaned messages FROM THE PREV STATE + NEW MESSAGE
+      // Remove suggestedReplies before sending to API
       const messagesForApi = [...prev, newMessage].map(
-        ({ id, ...rest }) => rest
+        ({ suggestedReplies, id, ...rest }) => rest
       );
-
-      // Fire API call INSIDE the state updater
-      // This ensures we use the latest state
       sendToApi(messagesForApi);
-
-      // Return the updated state for UI
       return [...prev, newMessage];
     });
     console.log(messages);
@@ -457,6 +458,29 @@ This is a safe, confidential space just for you.
       >
         {renderFormattedText(item.parts[0].text)}
       </Text>
+      {/* Show suggested replies if present on this message */}
+      {item.suggestedReplies && (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>
+          {item.suggestedReplies.map((reply, idx) => (
+            <TouchableOpacity
+              key={idx}
+              style={{
+                backgroundColor: "#e3eafc",
+                borderRadius: 16,
+                paddingVertical: 6,
+                paddingHorizontal: 14,
+                marginRight: 8,
+                marginBottom: 8,
+              }}
+              onPress={() => setInputMessage(reply)}
+            >
+              <Text style={{ color: "#007bff", fontWeight: "500" }}>
+                {reply}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
   );
 
