@@ -42,12 +42,13 @@ const InsightScreen = () => {
       // =================================================================
       // **Step 1: Data Retrieval**
       //
-      // Gather all diary entries from the user's device. This is the
-      // raw data source for the entire Insight Engine.
+      // Gather all diary entries and conversation summaries from the
+      // user's device. This is the raw data source for the Insight Engine.
       // =================================================================
       const allEntries = await getAllDiaryEntries();
+      const allSummariesText = await getAllSummaries();
 
-      if (allEntries.length === 0) {
+      if (allEntries.length === 0 && !allSummariesText.trim()) {
         setInsights({
           error: "Not enough data to generate insights. Keep journaling!",
         });
@@ -68,9 +69,10 @@ const InsightScreen = () => {
       // **Step 3: Thematic Analysis (Targeted AI Task #1)**
       //
       // Use a targeted LLM call to extract recurring emotional themes
-      // from the user's journal entries.
+      // from the user's journal entries and conversation summaries.
       // =================================================================
-      const allText = allEntries.map((e) => e.response).join("\n\n");
+      const allDiaryText = allEntries.map((e) => e.response).join("\n\n");
+      const allText = `${allDiaryText}\n\n${allSummariesText}`.trim();
       const themes = await getThemes(allText);
 
       // =================================================================
@@ -88,7 +90,7 @@ const InsightScreen = () => {
       // **Step 5: Critical Quote Extraction (Targeted AI Task #3)**
       //
       // Use a targeted LLM call to find the single most poignant and
-      // emotionally resonant sentence from all entries. This serves as
+      // emotionally resonant sentence from all entries and summaries. This serves as
       // the "emotional hook" for the brief.
       // =================================================================
       const criticalQuote = await getCriticalQuote(allText);
@@ -161,6 +163,40 @@ const InsightScreen = () => {
   };
 
   /**
+   * @description Retrieves all saved conversation summaries.
+   * These are generated from chat sessions and stored as text files.
+   * @returns {Promise<string>} A promise that resolves to a single string with all summaries concatenated.
+   */
+  const getAllSummaries = async () => {
+    let summaries = [];
+    if (Platform.OS === "web") {
+      const keys = Object.keys(window.localStorage).filter(
+        (key) => key.startsWith("userReport-") && key.endsWith(".txt")
+      );
+      for (const key of keys) {
+        const content = window.localStorage.getItem(key);
+        if (content) {
+          summaries.push(content);
+        }
+      }
+    } else {
+      const directory = FileSystem.documentDirectory;
+      const files = await FileSystem.readDirectoryAsync(directory);
+      const summaryFiles = files.filter(
+        (file) => file.startsWith("userReport-") && file.endsWith(".txt")
+      );
+      for (const file of summaryFiles) {
+        const filePath = `${directory}${file}`;
+        const content = await FileSystem.readAsStringAsync(filePath);
+        if (content) {
+          summaries.push(content);
+        }
+      }
+    }
+    return summaries.join("\n\n");
+  };
+
+  /**
    * @description Extracts mood scores and dates to create the Mood Trajectory data.
    * @param {Array} entries - The array of all diary entries.
    * @returns {Array} An array of objects, each containing a date and a mood score.
@@ -225,7 +261,8 @@ const InsightScreen = () => {
       "You are an expert in thematic analysis."
     );
     try {
-      return JSON.parse(result);
+      let cleansed = result.replace(/```[a-zA-Z]*|```/g, "").trim();
+      return JSON.parse(cleansed);
     } catch (e) {
       console.error("Failed to parse themes:", result);
       return ["Could not determine themes."];
