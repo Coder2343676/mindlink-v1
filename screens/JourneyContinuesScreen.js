@@ -26,7 +26,7 @@ const JourneyContinuesScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.contentContainer}>
         <Image
-          source={require("./src/data/blank-profile-picture-png.webp")}
+          source={require("../src/data/blank-profile-picture-png.webp")}
           style={styles.image}
         />
 

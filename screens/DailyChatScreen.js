@@ -17,7 +17,7 @@ import {
   Modal,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import SYSTEM_INSTRUCTION from "./systemInstruction";
+import SYSTEM_INSTRUCTION from "../utils/systemInstruction";
 import { Button } from "react-native-elements";
 import * as FileSystem from "expo-file-system";
 
@@ -114,7 +114,7 @@ const DailyChatScreen = ({ navigation }) => {
             user: {
               _id: 2,
               name: "MindLink",
-              avatar: require("./src/data/blank-profile-picture-png.webp"),
+              avatar: require("../src/data/blank-profile-picture-png.webp"),
             },
           };
 
@@ -226,7 +226,7 @@ const DailyChatScreen = ({ navigation }) => {
           user: {
             _id: 2,
             name: "MindLink",
-            avatar: require("./src/data/blank-profile-picture-png.webp"),
+            avatar: require("../src/data/blank-profile-picture-png.webp"),
           },
         };
 

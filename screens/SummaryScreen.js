@@ -18,7 +18,7 @@ import Markdown from "react-native-markdown-display";
 import SYSTEM_INSTRUCTION, {
   SYSTEM_INSTRUCTION_SUMMARY,
   SYSTEM_INSTRUCTION_POINTS,
-} from "./systemInstruction";
+} from "../utils/systemInstruction";
 import InsightScreen from "./InsightScreen";
 
 const SummaryScreen = ({ route, navigation }) => {
@@ -467,7 +467,7 @@ const SummaryScreen = ({ route, navigation }) => {
     >
       <View style={styles.headerContainer}>
         <Image
-          source={require("./src/data/blank-profile-picture-png.webp")}
+          source={require("../src/data/blank-profile-picture-png.webp")}
           style={styles.profileImage}
         />
         <View>
