@@ -169,8 +169,10 @@ const InsightScreen = () => {
       prompt,
       "You are an expert in identifying emotionally significant quotes."
     );
+    // Cleanse the result: remove code block markers and trim whitespace
+    let cleansed = result.replace(/```[a-zA-Z]*|```/g, "").trim();
     try {
-      const parsed = JSON.parse(result);
+      const parsed = JSON.parse(cleansed);
       return parsed.quote;
     } catch (e) {
       console.error("Failed to parse quote:", result);
