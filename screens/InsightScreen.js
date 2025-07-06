@@ -218,6 +218,9 @@ const InsightScreen = () => {
     return (
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <Text style={styles.header}>Session Brief</Text>
+        <Text style={styles.sectionContent}>
+          Meant to be read by a psychiatrist, placed here for demo purposes.
+        </Text>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Final Summary</Text>
