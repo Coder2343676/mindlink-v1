@@ -254,7 +254,9 @@ I'm here to be your personal, private guide for exploring your emotions and ment
 
 Individual conversations will **never** be stored, and summaries and insights are stored securely and locally on your device only. We will **never** share your personal data without your explicit consent!
 
-This is a safe, confidential space just for you.`,
+This is a safe, confidential space just for you.
+
+So, what do you want to talk about today? You can share anything on your mind, or if you prefer, I can suggest some topics to get us started.`,
             },
           ],
           suggestedReplies: [
