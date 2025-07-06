@@ -14,6 +14,7 @@ import {
 import { TabView, SceneMap, TabBar } from "react-native-tab-view";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system";
+import Markdown from "react-native-markdown-display";
 import SYSTEM_INSTRUCTION, {
   SYSTEM_INSTRUCTION_SUMMARY,
   SYSTEM_INSTRUCTION_POINTS,
@@ -405,7 +406,7 @@ const SummaryScreen = ({ route, navigation }) => {
       ]}
     >
       {summary ? (
-        <Text style={styles.summaryText}>{summary}</Text>
+        <Markdown style={markdownStyles}>{summary}</Markdown>
       ) : (
         <View style={styles.noContentContainer}>
           <Text style={styles.noContentText}>
@@ -690,5 +691,49 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+
+// Add markdownStyles for custom markdown rendering
+const markdownStyles = {
+  body: {
+    fontSize: 16,
+    color: "#333",
+    lineHeight: 24,
+    textAlign: "left",
+    padding: 10,
+  },
+  heading1: {
+    fontSize: 22,
+    color: "#007bff",
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  heading2: {
+    fontSize: 20,
+    color: "#007bff",
+    fontWeight: "bold",
+    marginBottom: 6,
+  },
+  strong: {
+    fontWeight: "bold",
+  },
+  em: {
+    fontStyle: "italic",
+  },
+  bullet_list: {
+    marginVertical: 8,
+  },
+  ordered_list: {
+    marginVertical: 8,
+  },
+  list_item: {
+    fontSize: 16,
+    color: "#333",
+    lineHeight: 24,
+  },
+  link: {
+    color: "#007bff",
+    textDecorationLine: "underline",
+  },
+};
 
 export default SummaryScreen;

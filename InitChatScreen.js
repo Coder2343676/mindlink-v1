@@ -37,7 +37,9 @@ const InitChatScreen = ({ navigation }) => {
           title="1st Report"
           onPress={() => {
             console.log("End chat button pressed");
-            const cleanedMessages = messages.map(({ id, ...rest }) => rest); // Clean messages
+            const cleanedMessages = messages.map(
+              ({ id, suggestedReplies, ...rest }) => rest
+            ); // Clean messages
             navigation.navigate("Summary", {
               cleanedMessages,
               isInitialFlow: true, // Mark this as part of the initial flow
