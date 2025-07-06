@@ -19,6 +19,7 @@ import SYSTEM_INSTRUCTION, {
   SYSTEM_INSTRUCTION_SUMMARY,
   SYSTEM_INSTRUCTION_POINTS,
 } from "./systemInstruction";
+import InsightScreen from "./InsightScreen";
 
 const SummaryScreen = ({ route, navigation }) => {
   const cleanedMessages = route.params?.cleanedMessages || [];
@@ -34,6 +35,7 @@ const SummaryScreen = ({ route, navigation }) => {
     { key: "general", title: "General" },
     { key: "today", title: "Today" },
     { key: "history", title: "History" },
+    { key: "insights", title: "Insights" },
   ]);
 
   // Check if this is part of the initial flow (called directly from ChatScreen)
@@ -453,6 +455,7 @@ const SummaryScreen = ({ route, navigation }) => {
     general: GeneralTab,
     today: TodayTab,
     history: HistoryTab,
+    insights: InsightScreen,
   });
 
   return (
