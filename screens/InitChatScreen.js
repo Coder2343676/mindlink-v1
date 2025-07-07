@@ -16,7 +16,7 @@ import {
   Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import SYSTEM_INSTRUCTION_INITIAL from "../utils/systemInstruction";
+import { SYSTEM_INSTRUCTION_INITIAL } from "../utils/systemInstruction";
 import { Button, Header } from "react-native-elements"; // Import Header component
 import * as FileSystem from "expo-file-system"; // Replace RNFS with FileSystem
 import { Asset } from "expo-asset";
