@@ -13,9 +13,10 @@ import {
   SafeAreaView,
   Linking,
   Dimensions,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import SYSTEM_INSTRUCTION from "../utils/systemInstruction";
+import SYSTEM_INSTRUCTION_INITIAL from "../utils/systemInstruction";
 import { Button, Header } from "react-native-elements"; // Import Header component
 import * as FileSystem from "expo-file-system"; // Replace RNFS with FileSystem
 import { Asset } from "expo-asset";
@@ -32,23 +33,9 @@ const InitChatScreen = ({ navigation }) => {
   // Set up the header with a button
   useEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <Button
-          title="1st Report"
-          onPress={() => {
-            console.log("End chat button pressed");
-            const cleanedMessages = messages.map(
-              ({ id, suggestedReplies, ...rest }) => rest
-            ); // Clean messages
-            navigation.navigate("Summary", {
-              cleanedMessages,
-              isInitialFlow: true, // Mark this as part of the initial flow
-            });
-          }}
-        />
-      ),
+      headerRight: null, // Remove the "1st Report" button
     });
-  }, [navigation, messages]);
+  }, [navigation]);
 
   useEffect(() => {
     const storedName = "";
@@ -225,7 +212,7 @@ const InitChatScreen = ({ navigation }) => {
           const cacheName = await createCachedContent(
             fileUri,
             mimeType,
-            SYSTEM_INSTRUCTION,
+            SYSTEM_INSTRUCTION_INITIAL,
             TTL
           );
           console.log("Cache created:", cacheName);
@@ -320,7 +307,7 @@ So, what do you want to talk about today? You can share anything on your mind, o
             role: "user",
             parts: [
               {
-                text: SYSTEM_INSTRUCTION,
+                text: SYSTEM_INSTRUCTION_INITIAL,
               },
             ],
           },
@@ -342,13 +329,55 @@ So, what do you want to talk about today? You can share anything on your mind, o
       const data = await response.json();
       console.log("Raw response:", data); // debug log for payload inbound
 
-      const botMessage = {
-        id: Date.now().toString() + "-bot",
-        role: "model",
-        parts: [{ text: (data.reply || "").trim() }],
-      };
-
-      setMessages((prev) => [...prev, botMessage]);
+      // Check for the end-of-conversation token
+      const botReply = (data.reply || "").trim();
+      if (botReply.includes("[END_OF_CONVERSATION]")) {
+        const cleanBotReply = botReply
+          .replace("[END_OF_CONVERSATION]", "")
+          .trim();
+        if (cleanBotReply) {
+          const botMessage = {
+            id: Date.now().toString() + "-bot",
+            role: "model",
+            parts: [{ text: cleanBotReply }],
+          };
+          setMessages((prev) => [...prev, botMessage]);
+        }
+        setTimeout(() => {
+          Alert.alert(
+            "Ready to Summarize?",
+            "Would you like me to create your first wellness report?",
+            [
+              {
+                text: "Not Yet",
+                style: "cancel",
+              },
+              {
+                text: "Yes, Please",
+                onPress: () => {
+                  setMessages((currentMessages) => {
+                    const cleanedMessages = currentMessages.map(
+                      ({ id, suggestedReplies, ...rest }) => rest
+                    );
+                    navigation.navigate("Summary", {
+                      cleanedMessages,
+                      isInitialFlow: true,
+                    });
+                    return currentMessages;
+                  });
+                },
+              },
+            ]
+          );
+        }, 100);
+      } else {
+        const botMessage = {
+          id: Date.now().toString() + "-bot",
+          role: "model",
+          parts: [{ text: botReply }],
+        };
+        setMessages((prev) => [...prev, botMessage]);
+      }
     } catch (error) {
       console.error("API Error:", error);
       setMessages((prev) => [
