@@ -60,25 +60,9 @@ const DailyChatScreen = ({ navigation }) => {
   // Set up the header with a button
   useEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <Button
-          title="View Report"
-          onPress={() => {
-            // Format messages correctly for the API
-            const formattedMessages = messages.map((msg) => ({
-              role: msg.user && msg.user._id === 1 ? "user" : "model",
-              parts: [{ text: msg.text || "" }],
-            }));
-
-            // Update the Reports tab with the current messages and switch to it
-            navigation.navigate("Reports", {
-              cleanedMessages: formattedMessages,
-            });
-          }}
-        />
-      ),
+      headerRight: null, // Remove the "View Report" button
     });
-  }, [navigation, messages]);
+  }, [navigation]);
 
   // Fetch user name and load messages
   useEffect(() => {
@@ -218,7 +202,59 @@ const DailyChatScreen = ({ navigation }) => {
       const data = await response.json();
       const botResponse = (data.reply || "").trim();
 
-      if (botResponse) {
+      // Check for the end-of-conversation token
+      if (botResponse.includes("[END_OF_CONVERSATION]")) {
+        // Remove the token from the message displayed to the user
+        const cleanBotResponse = botResponse
+          .replace("[END_OF_CONVERSATION]", "")
+          .trim();
+
+        // Add the final bot message to the chat
+        if (cleanBotResponse) {
+          const botMessage = {
+            _id: createUniqueId("bot"),
+            text: cleanBotResponse,
+            createdAt: new Date(),
+            user: {
+              _id: 2,
+              name: "MindLink",
+              avatar: require("../src/data/blank-profile-picture-png.webp"),
+            },
+          };
+          // Use a function with the latest state to avoid stale closures
+          setMessages((previousMessages) => [...previousMessages, botMessage]);
+        }
+
+        // Use a timeout to ensure the state update is rendered before showing the alert
+        setTimeout(() => {
+          Alert.alert(
+            "Ready to Summarize?",
+            "Would you like me to create your wellness report for today?",
+            [
+              {
+                text: "Not Yet",
+                style: "cancel",
+              },
+              {
+                text: "Yes, Please",
+                onPress: () => {
+                  // We use a callback with setMessages to get the absolute latest message list
+                  setMessages((currentMessages) => {
+                    const formattedMessages = currentMessages.map((msg) => ({
+                      role: msg.user && msg.user._id === 1 ? "user" : "model",
+                      parts: [{ text: msg.text || "" }],
+                    }));
+                    navigation.navigate("Reports", {
+                      cleanedMessages: formattedMessages,
+                    });
+                    return currentMessages; // Return state unchanged
+                  });
+                },
+              },
+            ]
+          );
+        }, 100); // A short delay
+      } else if (botResponse) {
         const botMessage = {
           _id: createUniqueId("bot"),
           text: botResponse,
