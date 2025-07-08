@@ -344,31 +344,47 @@ So, what do you want to talk about today? You can share anything on your mind, o
           setMessages((prev) => [...prev, botMessage]);
         }
         setTimeout(() => {
-          Alert.alert(
-            "Ready to Summarize?",
-            "Would you like me to create your first wellness report?",
-            [
-              {
-                text: "Not Yet",
-                style: "cancel",
-              },
-              {
-                text: "Yes, Please",
-                onPress: () => {
-                  setMessages((currentMessages) => {
-                    const cleanedMessages = currentMessages.map(
-                      ({ id, suggestedReplies, ...rest }) => rest
-                    );
-                    navigation.navigate("Summary", {
-                      cleanedMessages,
-                      isInitialFlow: true,
+          if (Platform.OS === "web") {
+            if (
+              window.confirm(
+                "Would you like me to create your first wellness report?"
+              )
+            ) {
+              setMessages((currentMessages) => {
+                const cleanedMessages = currentMessages.map(
+                  ({ id, suggestedReplies, ...rest }) => rest
+                );
+                navigation.navigate("Summary", {
+                  cleanedMessages,
+                  isInitialFlow: true,
+                });
+                return currentMessages;
+              });
+            }
+          } else {
+            Alert.alert(
+              "Ready to Summarize?",
+              "Would you like me to create your first wellness report?",
+              [
+                { text: "Not Yet", style: "cancel" },
+                {
+                  text: "Yes, Please",
+                  onPress: () => {
+                    setMessages((currentMessages) => {
+                      const cleanedMessages = currentMessages.map(
+                        ({ id, suggestedReplies, ...rest }) => rest
+                      );
+                      navigation.navigate("Summary", {
+                        cleanedMessages,
+                        isInitialFlow: true,
+                      });
+                      return currentMessages;
                     });
-                    return currentMessages;
-                  });
+                  },
                 },
-              },
-            ]
-          );
+              ]
+            );
+          }
         }, 100);
       } else {
         const botMessage = {

@@ -227,32 +227,47 @@ const DailyChatScreen = ({ navigation }) => {
 
         // Use a timeout to ensure the state update is rendered before showing the alert
         setTimeout(() => {
-          Alert.alert(
-            "Ready to Summarize?",
-            "Would you like me to create your wellness report for today?",
-            [
-              {
-                text: "Not Yet",
-                style: "cancel",
-              },
-              {
-                text: "Yes, Please",
-                onPress: () => {
-                  // We use a callback with setMessages to get the absolute latest message list
-                  setMessages((currentMessages) => {
-                    const formattedMessages = currentMessages.map((msg) => ({
-                      role: msg.user && msg.user._id === 1 ? "user" : "model",
-                      parts: [{ text: msg.text || "" }],
-                    }));
-                    navigation.navigate("Reports", {
-                      cleanedMessages: formattedMessages,
+          if (Platform.OS === "web") {
+            if (
+              window.confirm(
+                "Would you like me to create your wellness report for today?"
+              )
+            ) {
+              setMessages((currentMessages) => {
+                const cleanedMessages = currentMessages.map(
+                  ({ id, suggestedReplies, ...rest }) => rest
+                );
+                navigation.navigate("Summary", {
+                  cleanedMessages,
+                  isInitialFlow: true,
+                });
+                return currentMessages;
+              });
+            }
+          } else {
+            Alert.alert(
+              "Ready to Summarize?",
+              "Would you like me to create your wellness report for today?",
+              [
+                { text: "Not Yet", style: "cancel" },
+                {
+                  text: "Yes, Please",
+                  onPress: () => {
+                    setMessages((currentMessages) => {
+                      const cleanedMessages = currentMessages.map(
+                        ({ id, suggestedReplies, ...rest }) => rest
+                      );
+                      navigation.navigate("Summary", {
+                        cleanedMessages,
+                        isInitialFlow: true,
+                      });
+                      return currentMessages;
                     });
-                    return currentMessages; // Return state unchanged
-                  });
+                  },
                 },
-              },
-            ]
-          );
+              ]
+            );
+          }
         }, 100); // A short delay
       } else if (botResponse) {
         const botMessage = {
