@@ -239,7 +239,7 @@ const DailyChatScreen = ({ navigation }) => {
                 );
                 navigation.navigate("Summary", {
                   cleanedMessages,
-                  isInitialFlow: true,
+                  isInitialFlow: false,
                 });
                 return currentMessages;
               });
@@ -259,7 +259,7 @@ const DailyChatScreen = ({ navigation }) => {
                       );
                       navigation.navigate("Summary", {
                         cleanedMessages,
-                        isInitialFlow: true,
+                        isInitialFlow: false,
                       });
                       return currentMessages;
                     });
