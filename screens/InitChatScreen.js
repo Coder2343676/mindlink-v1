@@ -241,7 +241,7 @@ const InitChatScreen = ({ navigation }) => {
 
 I'm here to be your personal, private guide for exploring your emotions and mental well-being. To start, we'll have a gentle chat to help me understand how best to support you. And when you've shared enough, just press the **"1st Report"** button.
 
-Individual conversations will **never** be stored, and summaries and insights are stored securely and locally on your device only. We will **never** share your personal data without your explicit consent! This is a safe, confidential space just for you.
+Individual conversations will **never** be stored, and summaries and insights are stored securely and locally on your device only. We will **never** share your personal data without your explicit consent! This is a safe, confidential space just for you. By continuing, you agree to our terms of service and privacy policy.
 
 So, what do you want to talk about today? You can share anything on your mind, or if you prefer, I can suggest some topics to get us started.`,
             },
