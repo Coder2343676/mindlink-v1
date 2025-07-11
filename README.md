@@ -1,6 +1,6 @@
 # MindLink - Mental Wellness Assistant
 
-Created by Mak Yiu Man Raymond (麥耀文)
+Created by Mak Yiu Man Raymond (麥耀文) and the MindLink team.
 
 ## Overview
 
