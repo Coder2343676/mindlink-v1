@@ -25,7 +25,8 @@ MindLink is a mobile application designed to serve as a compassionate and suppor
 
 ## Tech Stack
 
-- **Frontend**: React Native (with Expo)
+- **Frontend for teenagers**: React Native (with Expo)
+- **Frontend for doctors**: React (with Vite)
 - **Backend**: Node.js server deployed on Vercel (connects to Gemini API)
 
 ## Contributing
