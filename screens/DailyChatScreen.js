@@ -234,10 +234,11 @@ const DailyChatScreen = ({ navigation }) => {
               )
             ) {
               setMessages((currentMessages) => {
-                const cleanedMessages = currentMessages.map(
-                  ({ id, suggestedReplies, ...rest }) => rest
-                );
-                navigation.navigate("Summary", {
+                const cleanedMessages = currentMessages.map((msg) => ({
+                  role: msg.user._id === 1 ? "user" : "model",
+                  parts: [{ text: msg.text }],
+                }));
+                navigation.navigate("Reports", {
                   cleanedMessages,
                   isInitialFlow: false,
                 });
@@ -254,10 +255,11 @@ const DailyChatScreen = ({ navigation }) => {
                   text: "Yes, Please",
                   onPress: () => {
                     setMessages((currentMessages) => {
-                      const cleanedMessages = currentMessages.map(
-                        ({ id, suggestedReplies, ...rest }) => rest
-                      );
-                      navigation.navigate("Summary", {
+                      const cleanedMessages = currentMessages.map((msg) => ({
+                        role: msg.user._id === 1 ? "user" : "model",
+                        parts: [{ text: msg.text }],
+                      }));
+                      navigation.navigate("Reports", {
                         cleanedMessages,
                         isInitialFlow: false,
                       });
