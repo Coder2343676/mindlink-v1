@@ -331,7 +331,10 @@ const SummaryScreen = ({ route, navigation }) => {
               const parsedPoints = JSON.parse(jsonString);
               setKeyTakeaways(parsedPoints);
             } else {
-              console.error("No valid JSON found in response:", points);
+              console.error(
+                "No valid JSON (possible backend error):",
+                data.error
+              );
               setKeyTakeaways([]);
             }
           } catch (jsonError) {
@@ -358,7 +361,7 @@ const SummaryScreen = ({ route, navigation }) => {
         );
       }
     }
-  }, [cleanedMessages, hasReport]);
+  }, [cleanedMessages]);
 
   // Add a special style for web platforms to fix scrolling
   const webSpecificStyle =
